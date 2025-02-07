@@ -62,36 +62,41 @@ chatbot(int myId, char *myName)
 
 
     //loop
-    while(1){
+    while (1) {
+    // to get msg from the previous chatbot
+    char recvMsg[MAX_MSG_LEN];
+    read(fd[myId - 1][0], recvMsg, MAX_MSG_LEN);
 
-        //to get msg from the previous chatbot
-        char recvMsg[MAX_MSG_LEN];
-        read(fd[myId-1][0], recvMsg, MAX_MSG_LEN);
-
-	    if(strcmp(recvMsg,":EXIT")!=0 && strcmp(recvMsg,":exit")!=0){//if the received msg is not EXIT/exit: continue chatting 
+    if (strcmp(recvMsg, ":EXIT") != 0 && strcmp(recvMsg, ":exit") != 0) { // if the received msg is not EXIT/exit: continue chatting 
+        
+        while (1) {
+            printf("Hello, this is chatbot %s. Please type:\n", myName);
             
-	        printf("Hello, this is chatbot %s. Please type:\n", myName);
-            
-	        //get a string from std input and save it to msgBuf 
-	        char msgBuf[MAX_MSG_LEN];
+            //get a string from std input and save it to msgBuf 
+            char msgBuf[MAX_MSG_LEN];
             gets1(msgBuf);
             
             printf("I heard you said: %s\n", msgBuf);
             
             //pass the msg to the next one on the ring
-	        write(fd[myId][1], msgBuf, MAX_MSG_LEN); 
+            write(fd[myId][1], msgBuf, MAX_MSG_LEN); 
 
             //if user inputs EXIT/exit: exit myself
-            if(strcmp(msgBuf,"EXIT")==0||strcmp(msgBuf,"exit")==0){
+            if (strcmp(msgBuf, "EXIT") == 0 || strcmp(msgBuf, "exit") == 0) {
                 exit(0);
-            } 
+            }
 
-        }else{//if receives EXIT/exit: pass the msg down and exit myself
-            write(fd[myId][1], recvMsg, MAX_MSG_LEN);
-            exit(0);    
+            //if user inputs CHANGE/change: pass the msg and break to wait for the next chatbot message
+            if (strcmp(msgBuf, ":CHANGE") == 0 || strcmp(msgBuf, ":change") == 0) {
+                break;
+            }
         }
-            
+
+    } else { //if receives EXIT/exit: pass the msg down and exit myself
+        write(fd[myId][1], recvMsg, MAX_MSG_LEN);
+        exit(0);    
     }
+}
 
 }
 
