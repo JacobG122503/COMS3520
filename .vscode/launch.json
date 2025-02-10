@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug xv6-riscv",
+            "type": "cppdbg",
+            "request": "launch",
+            "preLaunchTask": "Run make qemu-gdb",
+            "program": "${workspaceRoot}/kernel/kernel",
+            "cwd": "${workspaceRoot}/gdb",
+            "miDebuggerServerAddress": "0.0.0.0:26000",
+            "miDebuggerPath": "/usr/bin/gdb-multiarch",
+        }
+    ]
+}
