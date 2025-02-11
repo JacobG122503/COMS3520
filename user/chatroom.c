@@ -63,6 +63,9 @@ chatbot(int myId, char *myName)
 
     //loop
     while(1){
+        //clear the info incase overlap mess up
+        char recvMsg[MAX_MSG_LEN] = {0}; 
+        read(fd[myId-1][0], recvMsg, MAX_MSG_LEN);
 
         //to get msg from the previous chatbot
         char recvMsg[MAX_MSG_LEN];
