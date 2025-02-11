@@ -1,13 +1,3 @@
-for (int i = 0; i < argc - 1; i++) {
-    pipe1(fd[i]);
-    if (fork1() == 0) {
-        chatbot(i, argv[i + 1], argc - 1, botNames);
-    }
-    // Parent closes write end of previous bot's pipe
-    if (i > 0) {
-        close(fd[i - 1][1]);
-    }
-}
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
