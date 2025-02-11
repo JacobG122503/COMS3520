@@ -57,40 +57,35 @@ void chatbot(int myId, char *myName, int numBots, char *botNames[]) {
     close(fd[myId - 1][1]);
     close(fd[myId][0]);
 
-    // Loop
+    // Chat loop
     while (1) {
-        // Get msg from the previous chatbot
-        char recvMsg[MAX_MSG_LEN];
-        int n = read(fd[myId - 1][0], recvMsg, MAX_MSG_LEN);
+        char msgBuf[MAX_MSG_LEN];
+        
+        // Get msg from the previous chatbot (or parent)
+        int n = read(fd[myId - 1][0], msgBuf, MAX_MSG_LEN);
         if (n <= 0) {
             panic("read failed");
         }
-        recvMsg[n] = '\0';
+        msgBuf[n] = '\0';
 
-        // If the received message is :CHANGE or :change, switch to the next bot
-        if (strcmp(recvMsg, ":CHANGE") == 0 || strcmp(recvMsg, ":change") == 0) {
-            write(fd[myId][1], recvMsg, MAX_MSG_LEN);
+        // Check if message is :CHANGE
+        if (strcmp(msgBuf, ":CHANGE") == 0 || strcmp(msgBuf, ":change") == 0) {
+            write(fd[myId][1], ":CHANGE", MAX_MSG_LEN);
             continue;
         }
 
-        // Chat loop for continuous chatting until :CHANGE or :change
+        // Chat loop: ask for messages and reply until change
         while (1) {
             printf("Hello, this is chatbot %s. Please type:\n", myName);
-
-            // Get a string from std input and save it to msgBuf
-            char msgBuf[MAX_MSG_LEN];
             gets1(msgBuf);
-
             printf("I heard you said: %s\n", msgBuf);
 
-            // If user inputs :CHANGE or :change, pass the msg down and switch to the next bot
             if (strcmp(msgBuf, ":CHANGE") == 0 || strcmp(msgBuf, ":change") == 0) {
-                write(fd[myId][1], msgBuf, MAX_MSG_LEN);
-                break;
+                write(fd[myId][1], ":CHANGE", MAX_MSG_LEN);
+                break;  // Break the loop and wait for parent to switch bots
             }
 
-            // Pass the msg to the next bot in the ring
-            write(fd[myId][1], msgBuf, MAX_MSG_LEN);
+            write(fd[myId][1], msgBuf, MAX_MSG_LEN);  // Send message to next bot
         }
     }
 }
@@ -109,78 +104,63 @@ int main(int argc, char *argv[]) {
     }
 
     // Create pipes and fork child processes for each chatbot
-    pipe1(fd[0]);
-    for (int i = 1; i < argc; i++) {
+    for (int i = 0; i < argc - 1; i++) {
         pipe1(fd[i]);
         if (fork1() == 0) {
-            chatbot(i, argv[i], argc - 1, botNames);
+            chatbot(i, argv[i + 1], argc - 1, botNames);
         }
     }
 
-    // Close the fds not used any longer
-    close(fd[0][0]);
-    close(fd[argc - 1][1]);
-    for (int i = 1; i < argc - 1; i++) {
-        close(fd[i][0]);
-        close(fd[i][1]);
-    }
-
-    // Send the START message to the first chatbot
-    write(fd[0][1], ":START", 6);
-
-    // Main chat loop for the user to interact with chatbots
-    int currentBot = 0;
+    // Main process will interact with the user
+    int currentBot = 0;  // Start with the first bot
     while (1) {
+        char msgBuf[MAX_MSG_LEN];
         char recvMsg[MAX_MSG_LEN];
-        int n = read(fd[argc - 1][0], recvMsg, MAX_MSG_LEN);
+        
+        // Read message from the current bot
+        int n = read(fd[currentBot][0], recvMsg, MAX_MSG_LEN);
         if (n <= 0) {
             panic("read failed");
         }
         recvMsg[n] = '\0';
 
-        // If the message is :EXIT or :exit, exit the program
-        if (strcmp(recvMsg, ":EXIT") == 0 || strcmp(recvMsg, ":exit") == 0) {
-            break;
-        }
-
-        // Display the message from the current bot
+        // Display message from the current bot
         printf("%s: %s\n", botNames[currentBot], recvMsg);
 
-        // Ask the user if they want to change the bot
-        char msgBuf[MAX_MSG_LEN];
+        // Ask user for input
         printf("Type :change or :CHANGE to switch bots, or type a message to continue chatting: ");
         gets1(msgBuf);
 
-        // Handle bot change request
+        // If user wants to change bot
         if (strcmp(msgBuf, ":CHANGE") == 0 || strcmp(msgBuf, ":change") == 0) {
             char newBot[MAX_MSG_LEN];
             printf("Which bot would you like to switch to? ");
             gets1(newBot);
 
-            // Validate the new bot name
             if (isValidBotName(newBot, botNames, argc - 1)) {
-                currentBot = -1;
+                // Find the bot index
                 for (int i = 0; i < argc - 1; i++) {
                     if (strcmp(newBot, botNames[i]) == 0) {
                         currentBot = i;
                         break;
                     }
                 }
-                // Inform the new bot about the switch
+                // Notify the chatbot to switch
                 write(fd[currentBot][1], ":CHANGE", MAX_MSG_LEN);
             } else {
                 printf("Invalid bot name. Please try again.\n");
             }
         } else {
-            // Pass the message to the current bot
+            // Forward the message to the current bot
             write(fd[currentBot][1], msgBuf, MAX_MSG_LEN);
         }
     }
 
     // Wait for all child processes to exit
-    for (int i = 1; i < argc; i++) {
+    for (int i = 0; i < argc - 1; i++) {
         wait(0);
     }
+
     printf("Now the chatroom closes. Bye bye!\n");
     exit(0);
 }
