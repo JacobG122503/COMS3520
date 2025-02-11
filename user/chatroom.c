@@ -67,10 +67,6 @@ chatbot(int myId, char *myName)
         char recvMsg[MAX_MSG_LEN] = {0}; 
         read(fd[myId-1][0], recvMsg, MAX_MSG_LEN);
 
-        //to get msg from the previous chatbot
-        char recvMsg[MAX_MSG_LEN];
-        read(fd[myId-1][0], recvMsg, MAX_MSG_LEN);
-
 	    if(strcmp(recvMsg,":EXIT")!=0 && strcmp(recvMsg,":exit")!=0){//if the received msg is not EXIT/exit: continue chatting 
             
 	        printf("Hello, this is chatbot %s. Please type:\n", myName);
