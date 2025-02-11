@@ -172,8 +172,8 @@ int main(int argc, char *argv[]) {
                 printf("Invalid bot name. Please try again.\n");
             }
         } else {
-            // Pass the message to the first bot
-            write(fd[0][1], msgBuf, MAX_MSG_LEN);
+            // Pass the message to the current bot
+            write(fd[currentBot][1], msgBuf, MAX_MSG_LEN);
         }
     }
 
