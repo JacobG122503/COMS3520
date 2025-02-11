@@ -1,4 +1,3 @@
-
 #include "kernel/types.h"
 #include "kernel/stat.h"
 #include "user/user.h"
@@ -8,7 +7,6 @@
 
 int fd[MAX_NUM_CHATBOT+1][2];
 
-
 //handle exception
 void
 panic(char *s)
@@ -16,7 +14,6 @@ panic(char *s)
   fprintf(2, "%s\n", s);
   exit(1);
 }
-
 
 //create a new process
 int
@@ -47,7 +44,6 @@ gets1(char msgBuf[MAX_MSG_LEN]){
 	msgBuf[len-1]='\0';
 }
 
-
 //script for chatbot (child process)
 void
 chatbot(int myId, char *myName)
@@ -60,20 +56,20 @@ chatbot(int myId, char *myName)
     close(fd[myId-1][1]);
     close(fd[myId][0]);
 
-
     //loop
     while(1){
         //clear the info incase overlap mess up
         char recvMsg[MAX_MSG_LEN] = {0}; 
         read(fd[myId-1][0], recvMsg, MAX_MSG_LEN);
+        printf("Bot %d read message: [%s]\n", myId, recvMsg);
 
-	    if(strcmp(recvMsg,":EXIT")!=0 && strcmp(recvMsg,":exit")!=0){//if the received msg is not EXIT/exit: continue chatting 
+    	if(strcmp(recvMsg,":EXIT")!=0 && strcmp(recvMsg,":exit")!=0){//if the received msg is not EXIT/exit: continue chatting 
             
-	        printf("Hello, this is chatbot %s. Please type:\n", myName);
+    	    printf("Hello, this is chatbot %s. Please type:\n", myName);
             
             //Chat loop until user says :change
-	        while (1) { 
-                char msgBuf[MAX_MSG_LEN];
+    	    while (1) { 
+                char msgBuf[MAX_MSG_LEN] = {0};
                 gets1(msgBuf);
 
                 if (strcmp(msgBuf, ":change") == 0 || strcmp(msgBuf, ":CHANGE") == 0) {
@@ -95,10 +91,7 @@ chatbot(int myId, char *myName)
         }
             
     }
-
 }
-
-
 
 //script for parent process
 int
@@ -131,17 +124,15 @@ main(int argc, char *argv[])
 
     //loop: when receive a token from predecessor, pass it to successor
     while(1){
-        char recvMsg[MAX_MSG_LEN];
+        char recvMsg[MAX_MSG_LEN] = {0};
         read(fd[argc-1][0], recvMsg, MAX_MSG_LEN); 
+        printf("Main received from last bot: [%s]\n", recvMsg);
         write(fd[0][1], recvMsg, MAX_MSG_LEN);
-	    if(strcmp(recvMsg,":EXIT")==0||strcmp(recvMsg,":exit")==0) break; //break from the loop if the msg is EXIT
+    	if(strcmp(recvMsg,":EXIT")==0||strcmp(recvMsg,":exit")==0) break; //break from the loop if the msg is EXIT
     }
 
     //exit after all children exit
     for(int i=1; i<=argc; i++) wait(0);
     printf("Now the chatroom closes. Bye bye!\n");
     exit(0);
-
 }
-
-
