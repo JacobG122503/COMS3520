@@ -57,29 +57,30 @@ void chatbot(int myId, char *myName) {
         }
         recvMsg[n] = '\0';
 
-        if (strcmp(recvMsg, ":CHANGE") != 0 && strcmp(recvMsg, ":change") != 0) {
-            // Continue chatting with the current bot
-            while (1) {
-                printf("Hello, this is chatbot %s. Please type:\n", myName);
-
-                // Get a string from std input and save it to msgBuf
-                char msgBuf[MAX_MSG_LEN];
-                gets1(msgBuf);
-
-                printf("I heard you said: %s\n", msgBuf);
-
-                // If user inputs :CHANGE or :change, pass the msg down and switch to the next bot
-                if (strcmp(msgBuf, ":CHANGE") == 0 || strcmp(msgBuf, ":change") == 0) {
-                    write(fd[myId][1], msgBuf, MAX_MSG_LEN);
-                    break;
-                }
-
-                // Pass the msg to the next one on the ring
-                write(fd[myId][1], msgBuf, MAX_MSG_LEN);
-            }
-        } else {
-            // If receives :CHANGE or :change, pass the msg down and switch to the next bot
+        // If the received message is :CHANGE or :change, switch to the next bot
+        if (strcmp(recvMsg, ":CHANGE") == 0 || strcmp(recvMsg, ":change") == 0) {
             write(fd[myId][1], recvMsg, MAX_MSG_LEN);
+            continue;
+        }
+
+        // Continue chatting with the current bot
+        while (1) {
+            printf("Hello, this is chatbot %s. Please type:\n", myName);
+
+            // Get a string from std input and save it to msgBuf
+            char msgBuf[MAX_MSG_LEN];
+            gets1(msgBuf);
+
+            printf("I heard you said: %s\n", msgBuf);
+
+            // If user inputs :CHANGE or :change, pass the msg down and switch to the next bot
+            if (strcmp(msgBuf, ":CHANGE") == 0 || strcmp(msgBuf, ":change") == 0) {
+                write(fd[myId][1], msgBuf, MAX_MSG_LEN);
+                break;
+            }
+
+            // Pass the msg to the next one on the ring
+            write(fd[myId][1], msgBuf, MAX_MSG_LEN);
         }
     }
 }
@@ -120,11 +121,13 @@ int main(int argc, char *argv[]) {
         }
         recvMsg[n] = '\0';
 
-        write(fd[0][1], recvMsg, MAX_MSG_LEN);
-
+        // If the message is :EXIT or :exit, break the loop
         if (strcmp(recvMsg, ":EXIT") == 0 || strcmp(recvMsg, ":exit") == 0) {
-            break; // Break from the loop if the msg is EXIT
+            break;
         }
+
+        // Pass the message to the first chatbot
+        write(fd[0][1], recvMsg, MAX_MSG_LEN);
     }
 
     // Exit after all children exit
