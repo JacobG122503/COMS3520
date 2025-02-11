@@ -113,8 +113,8 @@ int main(int argc, char *argv[]) {
     write(fd[0][1], ":START", 6);
 
     // Loop: when receive a token from predecessor, pass it to successor
+    char recvMsg[MAX_MSG_LEN];
     while (1) {
-        char recvMsg[MAX_MSG_LEN];
         int n = read(fd[argc - 1][0], recvMsg, MAX_MSG_LEN);
         if (n <= 0) {
             panic("read failed");
