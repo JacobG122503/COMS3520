@@ -59,9 +59,6 @@ void chatbot(int myId, char *myName) {
     close(fd[myId - 1][1]);
     close(fd[myId][0]);
 
-    char currentBot[MAX_MSG_LEN];
-    strcpy(currentBot, myName); // Initially chatting with the current bot
-
     while (1) {
         // To get msg from the previous chatbot
         char recvMsg[MAX_MSG_LEN];
@@ -79,7 +76,7 @@ void chatbot(int myId, char *myName) {
 
         // Continue chatting with the current bot
         while (1) {
-            printf("Hello, this is chatbot %s. Please type:\n", currentBot);
+            printf("Hello, this is chatbot %s. Please type:\n", myName);
 
             // Get a string from std input and save it to msgBuf
             char msgBuf[MAX_MSG_LEN];
@@ -98,14 +95,10 @@ void chatbot(int myId, char *myName) {
                 }
 
                 // If the user types the current bot name, continue chatting
-                if (strcmp(nextBot, currentBot) == 0) {
-                    printf("You are already chatting with %s. Continue typing messages.\n", currentBot);
+                if (strcmp(nextBot, myName) == 0) {
+                    printf("You are already chatting with %s. Continue typing messages.\n", myName);
                     continue;
                 }
-
-                // Change to the new bot
-                printf("Switching to chatbot %s...\n", nextBot);
-                strcpy(currentBot, nextBot);
 
                 // Pass the bot name to the parent process to switch
                 write(fd[myId][1], nextBot, MAX_MSG_LEN);
@@ -171,8 +164,14 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        // Pass the message to the first chatbot
-        write(fd[0][1], recvMsg, MAX_MSG_LEN);
+        // If the message is a bot name, switch to that bot
+        if (isValidBotName(recvMsg)) {
+            printf("Switching to chatbot %s...\n", recvMsg);
+            write(fd[0][1], recvMsg, MAX_MSG_LEN);
+        } else {
+            // Pass the message to the first chatbot
+            write(fd[0][1], recvMsg, MAX_MSG_LEN);
+        }
     }
 
     // Exit after all children exit
