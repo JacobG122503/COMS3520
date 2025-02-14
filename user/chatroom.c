@@ -21,6 +21,7 @@ memory limitations of the OS? I am not sure. I've spent a long time trying to fi
 int fd[MAX_NUM_CHATBOT + 1][2];
 char *botNames[MAX_NUM_CHATBOT]; 
 int numBots; 
+int activeBot = 0; // Tracks which bot is currently active
 
 void panic(char *s) {
     fprintf(2, "%s\n", s);
@@ -59,7 +60,6 @@ int isValidBotName(char *name) {
 }
 
 void chatbot(int myId, char *myName) {
-    //Close old pipes
     for (int i = 0; i < myId - 1; i++) {
         close(fd[i][0]);
         close(fd[i][1]);
@@ -83,45 +83,42 @@ void chatbot(int myId, char *myName) {
             exit(0);
         }
 
-        while (1) {
-            printf("Hello, this is chatbot %s. Please type:\n", currentBot);
+        if (strcmp(recvMsg, ":ACTIVATE") == 0) {
+            while (1) {
+                printf("Hello, this is chatbot %s. Please type:\n", currentBot);
 
-            char msgBuf[MAX_MSG_LEN];
-            gets1(msgBuf);
+                char msgBuf[MAX_MSG_LEN];
+                gets1(msgBuf);
 
-            //If user types change then ask what bot and change
-            if (strcmp(msgBuf, ":CHANGE") == 0 || strcmp(msgBuf, ":change") == 0) {
-                printf("Enter the name of the bot you want to chat with next:\n");
-                char nextBot[MAX_MSG_LEN];
-                gets1(nextBot);
+                if (strcmp(msgBuf, ":CHANGE") == 0 || strcmp(msgBuf, ":change") == 0) {
+                    printf("Enter the name of the bot you want to chat with next:\n");
+                    char nextBot[MAX_MSG_LEN];
+                    gets1(nextBot);
 
-                //Make sure bot name is a real name
-                if (!isValidBotName(nextBot)) {
-                    printf("Invalid bot name. Please try again.\n");
-                    continue;
+                    if (!isValidBotName(nextBot)) {
+                        printf("Invalid bot name. Please try again.\n");
+                        continue;
+                    }
+
+                    if (strcmp(nextBot, currentBot) == 0) {
+                        printf("You are already chatting with %s. Continue typing messages.\n", currentBot);
+                        continue;
+                    }
+
+                    printf("Switching to chatbot %s...\n", nextBot);
+                    strcpy(currentBot, nextBot);
+
+                    write(fd[myId][1], nextBot, MAX_MSG_LEN);
+                    break;
                 }
 
-                //If already changed to that bot, stay
-                if (strcmp(nextBot, currentBot) == 0) {
-                    printf("You are already chatting with %s. Continue typing messages.\n", currentBot);
-                    continue;
+                if (strcmp(msgBuf, "EXIT") == 0 || strcmp(msgBuf, "exit") == 0) {
+                    write(fd[myId][1], msgBuf, MAX_MSG_LEN);
+                    exit(0);
                 }
 
-                //Change to the bot
-                printf("Switching to chatbot %s...\n", nextBot);
-                strcpy(currentBot, nextBot);
-
-                //Pass the bot name to the parent pipe
-                write(fd[myId][1], nextBot, MAX_MSG_LEN);
-                break;
-            }
-
-            if (strcmp(msgBuf, "EXIT") == 0 || strcmp(msgBuf, "exit") == 0) {
                 write(fd[myId][1], msgBuf, MAX_MSG_LEN);
-                exit(0);
             }
-
-            write(fd[myId][1], msgBuf, MAX_MSG_LEN);
         }
     }
 }
@@ -152,7 +149,7 @@ int main(int argc, char *argv[]) {
         close(fd[i][1]);
     }
 
-    write(fd[0][1], ":START", 6);
+    write(fd[0][1], ":ACTIVATE", 10);
 
     while (1) {
         char recvMsg[MAX_MSG_LEN];
@@ -166,7 +163,13 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        write(fd[0][1], recvMsg, MAX_MSG_LEN);
+        for (int i = 0; i < numBots; i++) {
+            if (strcmp(botNames[i], recvMsg) == 0) {
+                activeBot = i;
+                write(fd[i + 1][1], ":ACTIVATE", 10);
+                break;
+            }
+        }
     }
 
     for (int i = 1; i < argc; i++) {
