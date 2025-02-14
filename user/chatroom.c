@@ -108,7 +108,7 @@ void chatbot(int myId, char *myName) {
                 break;
             }
 
-            if (strcmp(msgBuf, "EXIT") == 0 || strcmp(msgBuf, "exit") == 0) {
+            if (strcmp(msgBuf, ":EXIT") == 0 || strcmp(msgBuf, ":exit") == 0) {
                 write(fd[myId][1], msgBuf, MAX_MSG_LEN);
                 exit(0);
             }
