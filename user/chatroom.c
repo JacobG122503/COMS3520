@@ -1,16 +1,3 @@
-//jacobgar homework 1
-
-/*
-So my program doesn't entirely work but I want to explain the process for partial credit
-I think my approach is quite simple in that it just has a loop until :change is inputted
-Then the user is asked what bot to switch to and it does. If the user inputs a wrong bot name 
-it correctly tells it to retype and try again. 
-
-When the user does change bots, 8 out of 10 times it does change to the chosen bot.
-As the user goes on, the changes start to mess up. Maybe it has something to do with the
-memory limitations of the OS? I am not sure. I've spent a long time trying to fix it to no avail. 
-*/
-
 #include "kernel/types.h"
 #include "kernel/stat.h"
 #include "user/user.h"
@@ -21,7 +8,6 @@ memory limitations of the OS? I am not sure. I've spent a long time trying to fi
 int fd[MAX_NUM_CHATBOT + 1][2];
 char *botNames[MAX_NUM_CHATBOT]; 
 int numBots; 
-int activeBot = 0; // Tracks which bot is currently active
 
 void panic(char *s) {
     fprintf(2, "%s\n", s);
@@ -83,42 +69,43 @@ void chatbot(int myId, char *myName) {
             exit(0);
         }
 
-        if (strcmp(recvMsg, ":ACTIVATE") == 0) {
-            while (1) {
-                printf("Hello, this is chatbot %s. Please type:\n", currentBot);
+        if (strcmp(recvMsg, currentBot) != 0) {
+            write(fd[myId][1], recvMsg, MAX_MSG_LEN);
+            continue; 
+        }
 
-                char msgBuf[MAX_MSG_LEN];
-                gets1(msgBuf);
+        while (1) {
+            printf("Hello, this is chatbot %s. Please type:\n", currentBot);
 
-                if (strcmp(msgBuf, ":CHANGE") == 0 || strcmp(msgBuf, ":change") == 0) {
-                    printf("Enter the name of the bot you want to chat with next:\n");
-                    char nextBot[MAX_MSG_LEN];
-                    gets1(nextBot);
+            char msgBuf[MAX_MSG_LEN];
+            gets1(msgBuf);
 
-                    if (!isValidBotName(nextBot)) {
-                        printf("Invalid bot name. Please try again.\n");
-                        continue;
-                    }
+            if (strcmp(msgBuf, ":CHANGE") == 0 || strcmp(msgBuf, ":change") == 0) {
+                printf("Enter the name of the bot you want to chat with next:\n");
+                char nextBot[MAX_MSG_LEN];
+                gets1(nextBot);
 
-                    if (strcmp(nextBot, currentBot) == 0) {
-                        printf("You are already chatting with %s. Continue typing messages.\n", currentBot);
-                        continue;
-                    }
-
-                    printf("Switching to chatbot %s...\n", nextBot);
-                    strcpy(currentBot, nextBot);
-
-                    write(fd[myId][1], nextBot, MAX_MSG_LEN);
-                    break;
+                if (!isValidBotName(nextBot)) {
+                    printf("Invalid bot name. Please try again.\n");
+                    continue;
                 }
 
-                if (strcmp(msgBuf, "EXIT") == 0 || strcmp(msgBuf, "exit") == 0) {
-                    write(fd[myId][1], msgBuf, MAX_MSG_LEN);
-                    exit(0);
+                if (strcmp(nextBot, currentBot) == 0) {
+                    printf("You are already chatting with %s. Continue typing messages.\n", currentBot);
+                    continue;
                 }
 
-                write(fd[myId][1], msgBuf, MAX_MSG_LEN);
+                printf("Switching to chatbot %s...\n", nextBot);
+                write(fd[myId][1], nextBot, MAX_MSG_LEN);
+                break;
             }
+
+            if (strcmp(msgBuf, "EXIT") == 0 || strcmp(msgBuf, "exit") == 0) {
+                write(fd[myId][1], msgBuf, MAX_MSG_LEN);
+                exit(0);
+            }
+
+            write(fd[myId][1], msgBuf, MAX_MSG_LEN);
         }
     }
 }
@@ -149,7 +136,7 @@ int main(int argc, char *argv[]) {
         close(fd[i][1]);
     }
 
-    write(fd[0][1], ":ACTIVATE", 10);
+    write(fd[0][1], botNames[0], MAX_MSG_LEN);
 
     while (1) {
         char recvMsg[MAX_MSG_LEN];
@@ -163,13 +150,7 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        for (int i = 0; i < numBots; i++) {
-            if (strcmp(botNames[i], recvMsg) == 0) {
-                activeBot = i;
-                write(fd[i + 1][1], ":ACTIVATE", 10);
-                break;
-            }
-        }
+        write(fd[0][1], recvMsg, MAX_MSG_LEN);
     }
 
     for (int i = 1; i < argc; i++) {
@@ -178,3 +159,6 @@ int main(int argc, char *argv[]) {
     printf("Now the chatroom closes. Bye bye!\n");
     exit(0);
 }
+
+
+
