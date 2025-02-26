@@ -28,7 +28,7 @@ main(int argc, char *argv[])
     
     printf("my parent: %d\n", getppid());
 
-
+    /*
 
     //test 2: system call getcpids
 
@@ -96,6 +96,6 @@ main(int argc, char *argv[])
     printf("trapcount=%d, syscallcount=%d, devintcount=%d, timerintcount=%d\n",
         trapcount,syscallcount,devintcount,timerintcount
     );
-
+*/
 
 }
