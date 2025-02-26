@@ -94,3 +94,36 @@ sys_uptime(void)
 uint64 sys_getppid(void) {
   return myproc()->parent->pid; 
 }
+
+extern struct spinlock proc_lock;  // Declare the spinlock
+
+int getcpids(int *cpids, int max) {
+  struct proc *p = myproc();  // Get the calling process
+  int count = 0;
+  struct proc *child;
+
+  // Validate the input arguments
+  if (cpids == 0 || max <= 0) {
+    return -1;  // Invalid arguments
+  }
+
+  // Acquire the lock before accessing the process list
+  acquire(&proc_lock); // Lock to ensure no race conditions when accessing process list
+  
+  for (child = p; child < &p[NPROC]; child++) {
+    // Check if the child belongs to the calling process
+    if (child->parent == p && child->state != UNUSED && child->state != ZOMBIE) {
+      // The current process is a child of the calling process
+      if (count < max) {
+        cpids[count] = child->pid;  // Store child PID in the user-space array
+        count++;
+      } else {
+        break;  // We have filled the array up to max elements
+      }
+    }
+  }
+  
+  release(&proc_lock); // Release the process lock
+
+  return count;  // Return the number of child processes found
+}
