@@ -28,7 +28,7 @@ main(int argc, char *argv[])
     
     printf("my parent: %d\n", getppid());
 
-    /*
+    
 
     //test 2: system call getcpids
 
@@ -53,7 +53,7 @@ main(int argc, char *argv[])
 
     for(int i=0; i<10; i++) wait(0);
 
-
+    /*
 
 
     //testing 3: system call getpaddr
