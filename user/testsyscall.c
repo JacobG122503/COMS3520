@@ -4,7 +4,7 @@
 
 uint64 pa;
 
-int
+/*int
 routine()
 {
     int stack_value_2;
@@ -15,7 +15,7 @@ routine()
 
     
     return 0;
-}
+}*/
 
 int
 main(int argc, char *argv[])
