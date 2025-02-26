@@ -681,8 +681,3 @@ procdump(void)
     printf("\n");
   }
 }
-
-//Return parent PID
-uint64 sys_getppid(void) {
-  return myproc()->parent->pid;  
-}
