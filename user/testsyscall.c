@@ -97,5 +97,5 @@ main(int argc, char *argv[])
         trapcount,syscallcount,devintcount,timerintcount
     );
 */
-
+    return 0;
 }
