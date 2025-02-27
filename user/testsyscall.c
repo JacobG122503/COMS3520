@@ -79,8 +79,6 @@ main(int argc, char *argv[])
     pa = getpaddr(ptr);
     printf("heap_block_2 va: %p ==> pa: %lx\n", ptr, pa);
 
-    /*
-
     //test 4: system call gettraphistory
 
     double x=0.0;
@@ -93,6 +91,6 @@ main(int argc, char *argv[])
     printf("trapcount=%d, syscallcount=%d, devintcount=%d, timerintcount=%d\n",
         trapcount,syscallcount,devintcount,timerintcount
     );
-*/
+
     return 0;
 }

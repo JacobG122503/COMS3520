@@ -132,7 +132,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 //Assignment 2 stuff below
 [SYS_getppid] sys_getppid,
-[SYS_getcpids] = sys_getcpids,
+[SYS_getcpids] sys_getcpids,
 [SYS_getpaddr] sys_getpaddr,
 };
 
