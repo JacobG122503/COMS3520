@@ -40,3 +40,4 @@ entry("uptime");
 entry("getppid");
 entry("getcpids");
 entry("getpaddr");
+entry("gettraphistory");
