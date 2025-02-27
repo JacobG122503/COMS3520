@@ -164,13 +164,5 @@ uint64 sys_gettraphistory(void) {
     *devintcount = p->devint_count;
     *timerintcount = p->timerint_count;
 
-    //Stats copy
-    if (copyout(p->pagetable, (uint64)trapcount, (char*)&p->trap_count, sizeof(int)) < 0 ||
-        copyout(p->pagetable, (uint64)syscallcount, (char*)&p->syscall_count, sizeof(int)) < 0 ||
-        copyout(p->pagetable, (uint64)devintcount, (char*)&p->devint_count, sizeof(int)) < 0 ||
-        copyout(p->pagetable, (uint64)timerintcount, (char*)&p->timerint_count, sizeof(int)) < 0) {
-        return -1; 
-    }
-
     return 0;
 }
