@@ -97,33 +97,32 @@ uint64 sys_getppid(void) {
   return myproc()->parent->pid; 
 }
 
-extern struct spinlock proc_lock;  // Declare the spinlock
+extern struct spinlock proc_lock;  
 
-uint64
-sys_getcpids(void) {
-    int *cpids;          // Pointer to the user-space array
-    int max;             // Maximum number of child processes to return
-    struct proc *p = myproc(); // Current process
-    struct proc *child;  // Pointer to iterate through processes
-    int count = 0;       // Number of child processes found
+uint64 sys_getcpids(void) {
+    int *cpids;          
+    int max;             
+    struct proc *p = myproc();
+    struct proc *child;  
+    int count = 0;      
 
-    // Fetch arguments from user space
-    argaddr(0, (uint64*)&cpids); // Fetch the pointer to the cpids array
-    argint(1, &max);             // Fetch the value of max
+    //Get the pointer and max
+    argaddr(0, (uint64*)&cpids); 
+    argint(1, &max);             
 
-    // Iterate through all processes to find children
+    //For loop and find all children
     for (int i = 0; i < NPROC; i++) {
         child = &proc[i];
-        if (child->parent == p) { // Check if the process is a child of the current process
-            if (count < max) {    // Ensure we don't exceed the user-provided array size
-                // Copy the child's PID to the user-space array
+        if (child->parent == p) { 
+            if (count < max) {   
+                //Get PID
                 if (copyout(p->pagetable, (uint64)(cpids + count), (char*)&child->pid, sizeof(int)) < 0) {
-                    return -1; // Copyout failed
+                    return -1; 
                 }
                 count++;
             }
         }
     }
 
-    return count; // Return the number of child processes found
+    return count; 
 }
