@@ -158,6 +158,12 @@ uint64 sys_gettraphistory(void) {
     argaddr(2, (uint64*)&devintcount);
     argaddr(3, (uint64*)&timerintcount);
 
+    //Update
+    *trapcount = p->trap_count;
+    *syscallcount = p->syscall_count;
+    *devintcount = p->devint_count;
+    *timerintcount = p->timerint_count;
+
     //Stats copy
     if (copyout(p->pagetable, (uint64)trapcount, (char*)&p->trap_count, sizeof(int)) < 0 ||
         copyout(p->pagetable, (uint64)syscallcount, (char*)&p->syscall_count, sizeof(int)) < 0 ||
