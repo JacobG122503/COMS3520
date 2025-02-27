@@ -24,3 +24,4 @@
 #define SYS_getppid  22
 #define SYS_getcpids 23
 #define SYS_getpaddr 24
+#define SYS_gettraphistory 25

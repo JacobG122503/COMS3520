@@ -105,6 +105,7 @@ extern uint64 sys_close(void);
 extern uint64 sys_getppid(void);
 extern uint64 sys_getcpids(void);
 extern uint64 sys_getpaddr(void);
+extern uint64 sys_gettraphistory(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -134,6 +135,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_getppid] sys_getppid,
 [SYS_getcpids] sys_getcpids,
 [SYS_getpaddr] sys_getpaddr,
+[SYS_gettraphistory] sys_gettraphistory,
 };
 
 void

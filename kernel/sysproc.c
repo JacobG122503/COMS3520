@@ -147,3 +147,24 @@ uint64 sys_getpaddr(void) {
   uint64 paddr = PTE2PA(*pte) | (vaddr & 0xFFF); 
   return paddr;
 }
+
+//Test 4 
+uint64 sys_gettraphistory(void) {
+    int *trapcount, *syscallcount, *devintcount, *timerintcount;
+    struct proc *p = myproc();
+
+    argaddr(0, &trapcount);
+    argaddr(1, &syscallcount);
+    argaddr(2, &devintcount);
+    argaddr(3, &timerintcount);
+
+    //Stats copy
+    if (copyout(p->pagetable, (uint64)trapcount, (char*)&p->trap_count, sizeof(int)) < 0 ||
+        copyout(p->pagetable, (uint64)syscallcount, (char*)&p->syscall_count, sizeof(int)) < 0 ||
+        copyout(p->pagetable, (uint64)devintcount, (char*)&p->devint_count, sizeof(int)) < 0 ||
+        copyout(p->pagetable, (uint64)timerintcount, (char*)&p->timerint_count, sizeof(int)) < 0) {
+        return -1; 
+    }
+
+    return 0;
+}
