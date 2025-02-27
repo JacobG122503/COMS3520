@@ -6,6 +6,8 @@
 #include "spinlock.h"
 #include "proc.h"
 
+#include "syscall.h"
+
 uint64
 sys_exit(void)
 {
@@ -97,33 +99,31 @@ uint64 sys_getppid(void) {
 
 extern struct spinlock proc_lock;  // Declare the spinlock
 
-int getcpids(int *cpids, int max) {
-  struct proc *p = myproc();  // Get the calling process
-  int count = 0;
-  struct proc *child;
+uint64
+sys_getcpids(void) {
+    int *cpids;          // Pointer to the user-space array
+    int max;             // Maximum number of child processes to return
+    struct proc *p = myproc(); // Current process
+    struct proc *child;  // Pointer to iterate through processes
+    int count = 0;       // Number of child processes found
 
-  // Validate the input arguments
-  if (cpids == 0 || max <= 0) {
-    return -1;  // Invalid arguments
-  }
+    // Fetch arguments from user space
+    argaddr(0, (uint64*)&cpids); // Fetch the pointer to the cpids array
+    argint(1, &max);             // Fetch the value of max
 
-  // Acquire the lock before accessing the process list
-  acquire(&proc_lock); // Lock to ensure no race conditions when accessing process list
-  
-  for (child = p; child < &p[NPROC]; child++) {
-    // Check if the child belongs to the calling process
-    if (child->parent == p && child->state != UNUSED && child->state != ZOMBIE) {
-      // The current process is a child of the calling process
-      if (count < max) {
-        cpids[count] = child->pid;  // Store child PID in the user-space array
-        count++;
-      } else {
-        break;  // We have filled the array up to max elements
-      }
+    // Iterate through all processes to find children
+    for (int i = 0; i < NPROC; i++) {
+        child = &proc[i];
+        if (child->parent == p) { // Check if the process is a child of the current process
+            if (count < max) {    // Ensure we don't exceed the user-provided array size
+                // Copy the child's PID to the user-space array
+                if (copyout(p->pagetable, (uint64)(cpids + count), (char*)&child->pid, sizeof(int)) < 0) {
+                    return -1; // Copyout failed
+                }
+                count++;
+            }
+        }
     }
-  }
-  
-  release(&proc_lock); // Release the process lock
 
-  return count;  // Return the number of child processes found
+    return count; // Return the number of child processes found
 }
