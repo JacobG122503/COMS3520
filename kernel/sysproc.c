@@ -153,10 +153,10 @@ uint64 sys_gettraphistory(void) {
     int *trapcount, *syscallcount, *devintcount, *timerintcount;
     struct proc *p = myproc();
 
-    argaddr(0, &trapcount);
-    argaddr(1, &syscallcount);
-    argaddr(2, &devintcount);
-    argaddr(3, &timerintcount);
+    argaddr(0, (uint64*)&trapcount);
+    argaddr(1, (uint64*)&syscallcount);
+    argaddr(2, (uint64*)&devintcount);
+    argaddr(3, (uint64*)&timerintcount);
 
     //Stats copy
     if (copyout(p->pagetable, (uint64)trapcount, (char*)&p->trap_count, sizeof(int)) < 0 ||
