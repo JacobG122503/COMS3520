@@ -39,3 +39,4 @@ entry("uptime");
 #Assignment 2 stuff below
 entry("getppid");
 entry("getcpids");
+entry("getpaddr");

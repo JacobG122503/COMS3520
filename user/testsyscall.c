@@ -4,7 +4,7 @@
 
 uint64 pa;
 
-/*int
+int
 routine()
 {
     int stack_value_2;
@@ -15,7 +15,7 @@ routine()
 
     
     return 0;
-}*/
+}
 
 int
 main(int argc, char *argv[])
@@ -53,9 +53,6 @@ main(int argc, char *argv[])
 
     for(int i=0; i<10; i++) wait(0);
 
-    /*
-
-
     //testing 3: system call getpaddr
     
     void *ptr = (void *)main;
@@ -82,7 +79,7 @@ main(int argc, char *argv[])
     pa = getpaddr(ptr);
     printf("heap_block_2 va: %p ==> pa: %lx\n", ptr, pa);
 
-
+    /*
 
     //test 4: system call gettraphistory
 

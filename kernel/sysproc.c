@@ -93,10 +93,13 @@ sys_uptime(void)
 }
 
 //Everything for homework 2 below
+
+//Test 1
 uint64 sys_getppid(void) {
   return myproc()->parent->pid; 
 }
 
+//Test 2
 extern struct spinlock proc_lock;  
 
 uint64 sys_getcpids(void) {
@@ -125,4 +128,22 @@ uint64 sys_getcpids(void) {
     }
 
     return count; 
+}
+
+//Test 3
+uint64 sys_getpaddr(void) {
+  uint64 vaddr;  
+  struct proc *p = myproc();
+
+  //Get address
+  argaddr(0, &vaddr);
+
+  //Mapped or no
+  pte_t *pte = walk(p->pagetable, vaddr, 0);
+  if (pte == 0 || (*pte & PTE_V) == 0) {
+      return 0; 
+  }
+
+  uint64 paddr = PTE2PA(*pte) | (vaddr & 0xFFF); 
+  return paddr;
 }
