@@ -169,6 +169,12 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+
+  //Assignment 2
+  p->trap_count = 0;
+  p->syscall_count = 0;
+  p->devint_count = 0;
+  p->timerint_count = 0;
 }
 
 // Create a user page table for a given process, with no user memory,

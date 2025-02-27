@@ -148,21 +148,22 @@ uint64 sys_getpaddr(void) {
   return paddr;
 }
 
-//Test 4 
+//Test 4
 uint64 sys_gettraphistory(void) {
     int *trapcount, *syscallcount, *devintcount, *timerintcount;
     struct proc *p = myproc();
+    argaddr(0, (uint64 *)&trapcount);
+    argaddr(1, (uint64 *)&syscallcount);
+    argaddr(2, (uint64 *)&devintcount);
+    argaddr(3, (uint64 *)&timerintcount);
 
-    argaddr(0, (uint64*)&trapcount);
-    argaddr(1, (uint64*)&syscallcount);
-    argaddr(2, (uint64*)&devintcount);
-    argaddr(3, (uint64*)&timerintcount);
-
-    //Update
-    *trapcount = p->trap_count;
-    *syscallcount = p->syscall_count;
-    *devintcount = p->devint_count;
-    *timerintcount = p->timerint_count;
+    //Copy
+    if (copyout(p->pagetable, (uint64)trapcount, (char *)&p->trap_count, sizeof(int)) < 0 ||
+        copyout(p->pagetable, (uint64)syscallcount, (char *)&p->syscall_count, sizeof(int)) < 0 ||
+        copyout(p->pagetable, (uint64)devintcount, (char *)&p->devint_count, sizeof(int)) < 0 ||
+        copyout(p->pagetable, (uint64)timerintcount, (char *)&p->timerint_count, sizeof(int)) < 0) {
+        return -1;
+    }
 
     return 0;
 }

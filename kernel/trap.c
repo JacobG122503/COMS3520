@@ -46,7 +46,21 @@ usertrap(void)
   w_stvec((uint64)kernelvec);
 
   struct proc *p = myproc();
-  
+
+  //Assignment 2
+  p->trap_count++;
+
+  uint64 cause = r_scause();
+  if (cause == 8) {
+      p->syscall_count++;
+  } else if ((int)cause < 0) {
+      p->devint_count++;
+      int which_dev = devintr();
+      if (which_dev == 2) {
+          p->timerint_count++;
+      }
+  }
+
   // save user program counter.
   p->trapframe->epc = r_sepc();
   
