@@ -879,11 +879,11 @@ stopcfs(void) {
   stop_cfs_scheduler(); // Implement this in `proc.c`
 }
 
-void
-getruntime(uint64 actual_addr, uint64 virtual_addr) {
-  int actual, virtual;
+void getruntime(uint64 actual_addr, uint64 virtual_addr) {
+  uint64 actual, virtual;
   get_proc_runtime(myproc(), &actual, &virtual);
 
+  // Use copyout to write the actual and virtual runtime values to the provided addresses
   copyout(myproc()->pagetable, actual_addr, (char*)&actual, sizeof(actual));
   copyout(myproc()->pagetable, virtual_addr, (char*)&virtual, sizeof(virtual));
 }
