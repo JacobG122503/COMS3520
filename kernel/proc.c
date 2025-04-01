@@ -902,12 +902,6 @@ sys_getruntime(void) {
   return 0;
 }
 
-// A simple structure to track process runtime in CFS
-struct cfs_proc {
-    struct proc *p;
-    int vruntime; // Virtual runtime (for fair scheduling)
-};
-
 void start_cfs_scheduler(int quantum, int weight, int decay) {
   cfs_enabled = 1;
   cfs_quantum = quantum;
