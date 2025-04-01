@@ -18,6 +18,13 @@ struct spinlock pid_lock;
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
+//For Proj 1c
+void cfs_scheduler(struct cpu *c);
+void start_cfs_scheduler(int quantum, int weight, int decay);  // If these functions take arguments
+void stop_cfs_scheduler(void);
+void get_proc_runtime(struct proc *p, int *actual, int *virtual);
+
+
 extern char trampoline[]; // trampoline.S
 
 // helps ensure that wakeups of wait()ing
@@ -476,6 +483,8 @@ scheduler(void)
   }
 }*/
 
+int cfs = 0;                       // 0 for RR scheduler, 1 for fair scheduler
+
 // In kernel/proc.c
 void scheduler(void) {
   struct cpu *c = mycpu();
@@ -483,7 +492,7 @@ void scheduler(void) {
   for (;;) {
     intr_on();
     if (cfs) {
-      cfs_scheduler();  // Use fair scheduler
+      cfs_scheduler(c);  // Use fair scheduler
     } else {
       //old_scheduler(c);  // Use the old RR scheduler
     }
@@ -703,28 +712,28 @@ procdump(void)
 }
 
 //For assignment 1c
-void cfs_scheduler(void) {
-  struct proc *p;
-  struct proc *min_vruntime_proc = 0;
+// void cfs_scheduler(void) {
+//   struct proc *p;
+//   struct proc *min_vruntime_proc = 0;
 
   
-  for(p = proc; p < &proc[NPROC]; p++) {
-    if(p->state == RUNNABLE) {
-      if(min_vruntime_proc == 0 || p->vruntime < min_vruntime_proc->vruntime) {
-        min_vruntime_proc = p;
-      }
-    }
-  }
+//   for(p = proc; p < &proc[NPROC]; p++) {
+//     if(p->state == RUNNABLE) {
+//       if(min_vruntime_proc == 0 || p->vruntime < min_vruntime_proc->vruntime) {
+//         min_vruntime_proc = p;
+//       }
+//     }
+//   }
   
-  if(min_vruntime_proc) {
-    p = min_vruntime_proc;
-    p->state = RUNNING;
-    swtch(&cpus[cpuid()].context, &p->context);
-    //Increment vruntime based on execution
-    p->vruntime += 10; 
-  }
+//   if(min_vruntime_proc) {
+//     p = min_vruntime_proc;
+//     p->state = RUNNING;
+//     swtch(&cpus[cpuid()].context, &p->context);
+//     //Increment vruntime based on execution
+//     p->vruntime += 10; 
+//   }
 
-}
+// }
 
 int cfs_sched_latency = 128;  // Default length of scheduling latency
 int cfs_max_timeslice = 16;   // Max number of ticks for a process per scheduling latency
@@ -743,7 +752,7 @@ int nice_to_weight[40] = {
 };
 
 // In kernel/proc.c
-int cfs = 0;                       // 0 for RR scheduler, 1 for fair scheduler
+
 struct proc *cfs_current_proc = 0;  // The current process scheduled by the fair scheduler
 int cfs_proc_timeslice_len = 0;     // Number of ticks assigned to the current process
 int cfs_proc_timeslice_left = 0;    // Number of ticks left for the current process
