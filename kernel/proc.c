@@ -864,42 +864,28 @@ void cfs_scheduler(struct cpu *c) {
 }
 
 uint64
-nice(void) {
-  int value;
-  argint(0, &value); // Correct usage
+nice(int value) {
   myproc()->nice = value;  // Assuming `nice` is a field in `struct proc`
   return 0;
 }
 
-uint64
-startcfs(void) {
-  int quantum, weight, decay;
-  argint(0, &quantum);
-  argint(1, &weight);
-  argint(2, &decay);
+void
+startcfs(int quantum, int weight, int decay) {
   start_cfs_scheduler(quantum, weight, decay); // Implement in proc.c
-  return 0;
 }
 
-uint64
+void
 stopcfs(void) {
   stop_cfs_scheduler(); // Implement this in `proc.c`
-  return 0;
 }
 
-uint64
-getruntime(void) {
-  uint64 actual_addr, virtual_addr;
-  argaddr(0, &actual_addr);
-  argaddr(1, &virtual_addr);
-  
+void
+getruntime(uint64 actual_addr, uint64 virtual_addr) {
   int actual, virtual;
-  get_proc_runtime(myproc(), &actual, &virtual); // Implement in proc.c
+  get_proc_runtime(myproc(), &actual, &virtual);
 
   copyout(myproc()->pagetable, actual_addr, (char*)&actual, sizeof(actual));
   copyout(myproc()->pagetable, virtual_addr, (char*)&virtual, sizeof(virtual));
-  
-  return 0;
 }
 
 void start_cfs_scheduler(int quantum, int weight, int decay) {
