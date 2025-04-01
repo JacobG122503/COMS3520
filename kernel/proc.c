@@ -24,13 +24,17 @@ void start_cfs_scheduler(int quantum, int weight, int decay);
 void stop_cfs_scheduler(void);
 void get_proc_runtime(struct proc *p, int *actual, int *virtual);
 
+struct cfs_proc {
+  struct proc *p;  // Pointer to the process
+  int vruntime;    // Virtual runtime for the CFS
+};
+
 int cfs_enabled = 0;  // Flag to enable/disable CFS
 int cfs_quantum;      // Time slice for CFS scheduling
 int cfs_weight;       // Weight for process priority
 int cfs_decay;        // Decay factor for vruntime adjustments
 int cfs_count = 0; // Number of processes in CFS queue
 struct cfs_proc cfs_queue[NPROC]; // Array to store CFS process queue
-
 
 extern char trampoline[]; // trampoline.S
 
