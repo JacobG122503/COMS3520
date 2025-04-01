@@ -104,4 +104,8 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+
+  //For assignment 1c
+  uint64 vruntime;  // Virtual runtime for CFS
+  int weight;       // Weight based on priority (optional)
 };

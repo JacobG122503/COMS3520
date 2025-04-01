@@ -681,3 +681,27 @@ procdump(void)
     printf("\n");
   }
 }
+
+//For assignment 1c
+void cfs_scheduler(void) {
+  struct proc *p;
+  struct proc *min_vruntime_proc = 0;
+
+  
+  for(p = proc; p < &proc[NPROC]; p++) {
+    if(p->state == RUNNABLE) {
+      if(min_vruntime_proc == 0 || p->vruntime < min_vruntime_proc->vruntime) {
+        min_vruntime_proc = p;
+      }
+    }
+  }
+  
+  if(min_vruntime_proc) {
+    p = min_vruntime_proc;
+    p->state = RUNNING;
+    swtch(&cpus[cpuid()].context, &p->context);
+    //Increment vruntime based on execution
+    p->vruntime += 10; 
+  }
+
+}
