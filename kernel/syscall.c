@@ -133,10 +133,10 @@ static uint64 (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 //For assignment 1c
-// [SYS_nice] sys_nice,
-// [SYS_startcfs] sys_startcfs,
-// [SYS_stopcfs] sys_stopcfs,
-// [SYS_getruntime] sys_getruntime,
+[nice] nice,
+[startcfs] startcfs,
+[stopcfs] stopcfs,
+[getruntime] getruntime,
 };
 
 void
