@@ -20,7 +20,7 @@ static void freeproc(struct proc *p);
 
 //For Proj 1c
 void cfs_scheduler(struct cpu *c);
-void start_cfs_scheduler(int quantum, int weight, int decay);  // If these functions take arguments
+void start_cfs_scheduler(int quantum, int weight, int decay);
 void stop_cfs_scheduler(void);
 void get_proc_runtime(struct proc *p, int *actual, int *virtual);
 
@@ -485,17 +485,40 @@ scheduler(void)
 
 int cfs = 0;                       // 0 for RR scheduler, 1 for fair scheduler
 
-// In kernel/proc.c
 void scheduler(void) {
-  struct cpu *c = mycpu();
-  c->proc = 0;
+  struct proc *p;
   for (;;) {
-    intr_on();
-    if (cfs) {
-      cfs_scheduler(c);  // Use fair scheduler
-    } else {
-      //old_scheduler(c);  // Use the old RR scheduler
-    }
+      // Enable interrupts on this processor.
+      sti();
+
+      if (cfs_enabled) {
+          // Simple CFS scheduling: select process with smallest vruntime
+          struct proc *selected_proc = 0;
+          int min_vruntime = __INT_MAX__;
+
+          for (int i = 0; i < cfs_count; i++) {
+              if (cfs_queue[i].p->state == RUNNABLE && cfs_queue[i].vruntime < min_vruntime) {
+                  min_vruntime = cfs_queue[i].vruntime;
+                  selected_proc = cfs_queue[i].p;
+              }
+          }
+
+          if (selected_proc) {
+              selected_proc->state = RUNNING;
+              swtch(&mycpu()->context, &selected_proc->context);
+              selected_proc->runtime += 1; // Increment runtime
+          }
+      } else {
+          // Default round-robin scheduler
+          for (p = proc; p < &proc[NPROC]; p++) {
+              if (p->state != RUNNABLE)
+                  continue;
+
+              p->state = RUNNING;
+              swtch(&mycpu()->context, &p->context);
+              p->runtime += 1; // Track runtime
+          }
+      }
   }
 }
 
@@ -866,4 +889,38 @@ sys_getruntime(void) {
   copyout(myproc()->pagetable, virtual_addr, (char*)&virtual, sizeof(virtual));
   
   return 0;
+}
+
+int cfs_enabled = 0; // Flag to indicate if CFS scheduler is running
+
+// A simple structure to track process runtime in CFS
+struct cfs_proc {
+    struct proc *p;
+    int vruntime; // Virtual runtime (for fair scheduling)
+};
+
+struct cfs_proc cfs_queue[NPROC]; // Array to store CFS process queue
+int cfs_count = 0; // Number of processes in CFS queue
+
+int cfs_enabled = 0;  // Flag to enable/disable CFS
+int cfs_quantum;      // Time slice for CFS scheduling
+int cfs_weight;       // Weight for process priority
+int cfs_decay;        // Decay factor for vruntime adjustments
+
+
+void start_cfs_scheduler(int quantum, int weight, int decay) {
+  cfs_enabled = 1;
+  cfs_quantum = quantum;
+  cfs_weight = weight;
+  cfs_decay = decay;
+}
+
+void stop_cfs_scheduler(void) {
+  cfs_enabled = 0;
+  cfs_count = 0; // Reset CFS process count
+}
+
+void get_proc_runtime(struct proc *p, int *actual, int *virtual) {
+  *actual = p->runtime;  // Assuming runtime is the actual runtime of the process
+  *virtual = p->vruntime; // Assuming vruntime is the virtual runtime of the process
 }
