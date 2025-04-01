@@ -36,3 +36,9 @@ entry("getpid");
 entry("sbrk");
 entry("sleep");
 entry("uptime");
+
+#for assignment 1c
+entry("nice");
+entry("startcfs");
+entry("stopcfs");
+entry("getruntime");

@@ -42,7 +42,7 @@ void *memcpy(void *, const void *, uint);
 
 
 //For assignment 1c
-int nice(int value);
-int startcfs(int quantum, int weight, int decay);
-int stopcfs(void);
-int getruntime(int *actual, int *virtual);
+int nice(int);
+void startcfs(int, int, int);
+void stopcfs(void);
+int getruntime(uint64, uint64);
