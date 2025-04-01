@@ -19,7 +19,6 @@ fork1(void)
   return pid;
 }
 
-
 int
 main(int argc, char* argv[])
 {

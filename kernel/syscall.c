@@ -103,10 +103,10 @@ extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
 
 //For assignment 1c
-extern uint64 sys_nice(void);
-extern uint64 sys_startcfs(void);
-extern uint64 sys_stopcfs(void);
-extern uint64 sys_getruntime(void);
+extern uint64 nice(void);
+extern uint64 startcfs(void);
+extern uint64 stopcfs(void);
+extern uint64 getruntime(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -133,10 +133,10 @@ static uint64 (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 //For assignment 1c
-[nice] nice,
-[startcfs] startcfs,
-[stopcfs] stopcfs,
-[getruntime] getruntime,
+[SYS_nice] nice,
+[SYS_startcfs] startcfs,
+[SYS_stopcfs] stopcfs,
+[SYS_getruntime] getruntime,
 };
 
 void
