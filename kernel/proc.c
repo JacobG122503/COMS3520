@@ -864,7 +864,7 @@ void cfs_scheduler(struct cpu *c) {
 }
 
 uint64
-sys_nice(void) {
+nice(void) {
   int value;
   argint(0, &value); // Correct usage
   myproc()->nice = value;  // Assuming `nice` is a field in `struct proc`
@@ -872,7 +872,7 @@ sys_nice(void) {
 }
 
 uint64
-sys_startcfs(void) {
+startcfs(void) {
   int quantum, weight, decay;
   argint(0, &quantum);
   argint(1, &weight);
@@ -882,13 +882,13 @@ sys_startcfs(void) {
 }
 
 uint64
-sys_stopcfs(void) {
+stopcfs(void) {
   stop_cfs_scheduler(); // Implement this in `proc.c`
   return 0;
 }
 
 uint64
-sys_getruntime(void) {
+getruntime(void) {
   uint64 actual_addr, virtual_addr;
   argaddr(0, &actual_addr);
   argaddr(1, &virtual_addr);
