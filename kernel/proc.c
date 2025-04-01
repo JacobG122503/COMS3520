@@ -24,6 +24,13 @@ void start_cfs_scheduler(int quantum, int weight, int decay);
 void stop_cfs_scheduler(void);
 void get_proc_runtime(struct proc *p, int *actual, int *virtual);
 
+int cfs_enabled = 0;  // Flag to enable/disable CFS
+int cfs_quantum;      // Time slice for CFS scheduling
+int cfs_weight;       // Weight for process priority
+int cfs_decay;        // Decay factor for vruntime adjustments
+int cfs_count = 0; // Number of processes in CFS queue
+struct cfs_proc cfs_queue[NPROC]; // Array to store CFS process queue
+
 
 extern char trampoline[]; // trampoline.S
 
@@ -488,8 +495,8 @@ int cfs = 0;                       // 0 for RR scheduler, 1 for fair scheduler
 void scheduler(void) {
   struct proc *p;
   for (;;) {
-      // Enable interrupts on this processor.
-      sti();
+      // Enable interrupts on this processor in RISC-V.
+      __asm__ volatile("csrs sstatus, %0" :: "r"(SSTATUS_SIE));
 
       if (cfs_enabled) {
           // Simple CFS scheduling: select process with smallest vruntime
@@ -891,22 +898,11 @@ sys_getruntime(void) {
   return 0;
 }
 
-int cfs_enabled = 0; // Flag to indicate if CFS scheduler is running
-
 // A simple structure to track process runtime in CFS
 struct cfs_proc {
     struct proc *p;
     int vruntime; // Virtual runtime (for fair scheduling)
 };
-
-struct cfs_proc cfs_queue[NPROC]; // Array to store CFS process queue
-int cfs_count = 0; // Number of processes in CFS queue
-
-int cfs_enabled = 0;  // Flag to enable/disable CFS
-int cfs_quantum;      // Time slice for CFS scheduling
-int cfs_weight;       // Weight for process priority
-int cfs_decay;        // Decay factor for vruntime adjustments
-
 
 void start_cfs_scheduler(int quantum, int weight, int decay) {
   cfs_enabled = 1;
