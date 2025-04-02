@@ -458,6 +458,7 @@ int cfs_proc_timeslice_left = 0;    // Number of ticks left for the current proc
 int weight_sum() {
   int sum = 0;
   struct proc *p;
+  
   for(p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
     if(p->state == RUNNABLE) {
@@ -467,6 +468,7 @@ int weight_sum() {
     }
     release(&p->lock);
   }
+  printf("[WEIGHT] Total sum=%d\n", sum);  // Debug print
   return sum;
 }
 
@@ -479,46 +481,54 @@ struct proc* shortest_runtime_proc() {
     acquire(&p->lock);
     if(p->state == RUNNABLE && p->vruntime < min_vruntime) {
       if(min_proc) {
-        release(&min_proc->lock);
+        release(&min_proc->lock);  // Release previous min proc
       }
       min_proc = p;
       min_vruntime = p->vruntime;
     } else {
-      release(&p->lock);
+      release(&p->lock);  // Release if not selected
     }
   }
-  return min_proc; // Caller must release this lock!
+  return min_proc;  // Note: min_proc's lock is still held!
 }
 
 void cfs_scheduler(struct cpu *c) {
   c->proc = 0;
   
+  // Handle current process
   if (cfs_current_proc) {
     cfs_proc_timeslice_left--;
     
-    if (cfs_proc_timeslice_left > 0 && cfs_current_proc->state == RUNNABLE) {
-      c->proc = cfs_current_proc;
-    } else {
-      // Update vruntime and runtime for current process
+    if (cfs_proc_timeslice_left > 0) {
       acquire(&cfs_current_proc->lock);
-      if (cfs_proc_timeslice_len > 0) {
+      if (cfs_current_proc->state == RUNNABLE) {
+        c->proc = cfs_current_proc;
+      }
+      release(&cfs_current_proc->lock);
+    } else {
+      // Update vruntime when timeslice expires
+      acquire(&cfs_current_proc->lock);
+      if (cfs_current_proc->state == RUNNABLE) {
         int weight = nice_to_weight[cfs_current_proc->nice + 20];
         int inc = (cfs_proc_timeslice_len - cfs_proc_timeslice_left) * 1024 / weight;
-        cfs_current_proc->vruntime += (inc < 1) ? 1 : inc;
+        inc = (inc < 1) ? 1 : inc;
+        cfs_current_proc->vruntime += inc;
         cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
       }
       release(&cfs_current_proc->lock);
     }
   }
 
+  // Find new process if needed
   if (c->proc == 0) {
     struct proc *p = shortest_runtime_proc();
     if (p) {
       // Calculate timeslice
       int weight = nice_to_weight[p->nice + 20];
       int sum = weight_sum();
+      if (sum == 0) sum = 1;  // Prevent division by zero
+      
       cfs_proc_timeslice_len = (cfs_sched_latency * weight) / sum;
-      // Enforce min/max bounds
       if (cfs_proc_timeslice_len < cfs_min_timeslice) 
         cfs_proc_timeslice_len = cfs_min_timeslice;
       if (cfs_proc_timeslice_len > cfs_max_timeslice) 
@@ -528,9 +538,12 @@ void cfs_scheduler(struct cpu *c) {
       cfs_current_proc = p;
       c->proc = p;
       
+      // Switch to new process
       p->state = RUNNING;
       swtch(&c->context, &p->context);
-      release(&p->lock); // Release the lock from shortest_runtime_proc()
+      
+      // Process returned from scheduler, release its lock
+      release(&p->lock);
     }
   }
 }
@@ -750,28 +763,31 @@ void procdump(void) {
   }
 }
 
-// Project 1c system calls
 uint64 nice(int value) {
   if(value < -20 || value > 19) {
-    return -1; 
+    return -1;
   }
   struct proc *p = myproc();
   acquire(&p->lock);
   p->nice = value;
+  printf("[NICE] pid=%d set nice=%d\n", p->pid, value);  // Debug print
   release(&p->lock);
   return 0;
 }
 
 uint64 startcfs(int quantum, int weight, int decay) {
-  cfs = 1;  // This is the critical flag the scheduler checks
+  cfs = 1;  // This is the flag the scheduler checks
   cfs_sched_latency = quantum;
-  cfs_max_timeslice = weight; 
+  cfs_max_timeslice = weight;
   cfs_min_timeslice = decay;
+  printf("CFS scheduler enabled (quantum=%d, weight=%d, decay=%d)\n", 
+         quantum, weight, decay);
   return 0;
 }
 
 uint64 stopcfs(void) {
-  cfs = 0;  // Switch back to RR scheduler
+  cfs = 0;
+  printf("CFS scheduler disabled\n");
   return 0;
 }
 

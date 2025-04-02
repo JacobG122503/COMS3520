@@ -106,8 +106,10 @@ struct proc {
   char name[16];               // Process name (debugging)
 
   // For assignment 1c
-  uint64 vruntime;  // Virtual runtime for CFS
-  uint64 runtime;   // Total execution time
-  int nice;         // Niceness value
+  // For assignment 1c
+  int vruntime;    // Virtual runtime for CFS (signed for comparisons)
+  int runtime;     // Total execution time 
+  int nice;        // Niceness value (-20 to 19)
+  // Remove weight since it's calculated from nice
   int weight;       // Weight based on priority (optional)
 };
