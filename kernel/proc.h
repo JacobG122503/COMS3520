@@ -109,7 +109,7 @@ struct proc {
   // For assignment 1c
   int vruntime;    // Virtual runtime for CFS (signed for comparisons)
   int runtime;     // Total execution time 
-  int nice;        // Niceness value (-20 to 19)
+  int nice __attribute__((aligned(8)));
   // Remove weight since it's calculated from nice
   int weight;       // Weight based on priority (optional)
 };

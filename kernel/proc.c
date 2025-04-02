@@ -281,8 +281,6 @@ int growproc(int n) {
   return 0;
 }
 
-// Create a new process, copying the parent.
-// Sets up child kernel stack to return as if from fork() system call.
 int fork(void) {
   int i, pid;
   struct proc *np;
@@ -301,13 +299,20 @@ int fork(void) {
   }
   np->sz = p->sz;
 
-  // copy saved user registers.
+  // Copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
   // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;
 
-  // increment reference counts on open file descriptors.
+  // Copy CFS-related fields
+  acquire(&p->lock);  // Protect parent's fields
+  np->nice = p->nice;
+  np->vruntime = p->vruntime;  // Start with parent's vruntime
+  np->runtime = 0;             // Child starts fresh
+  release(&p->lock);
+
+  // Increment reference counts on open file descriptors.
   for(i = 0; i < NOFILE; i++)
     if(p->ofile[i])
       np->ofile[i] = filedup(p->ofile[i]);
@@ -317,12 +322,18 @@ int fork(void) {
 
   pid = np->pid;
 
+  // Add debug print to verify copying
+  printf("[FORK] pid=%d forked to %d (nice=%d, vruntime=%d)\n", 
+         p->pid, np->pid, np->nice, np->vruntime);
+
   release(&np->lock);
 
+  // Set parent while holding wait_lock
   acquire(&wait_lock);
   np->parent = p;
   release(&wait_lock);
 
+  // Mark runnable while holding np's lock
   acquire(&np->lock);
   np->state = RUNNABLE;
   release(&np->lock);
