@@ -481,6 +481,7 @@ struct proc* shortest_runtime_proc() {
     acquire(&p->lock);
     if(p->state == RUNNABLE && p->vruntime < min_vruntime) {
       if(min_proc) {
+        if(!holding(&min_proc->lock)) panic("missing lock");
         release(&min_proc->lock);  // Release previous min proc
       }
       min_proc = p;
@@ -765,12 +766,12 @@ void procdump(void) {
 
 uint64 nice(int value) {
   if(value < -20 || value > 19) {
-    return -1;
+    return -1; 
   }
   struct proc *p = myproc();
-  acquire(&p->lock);
+  acquire(&p->lock);  // Must hold lock to modify process state
   p->nice = value;
-  printf("[NICE] pid=%d set nice=%d\n", p->pid, value);  // Debug print
+  printf("[NICE] pid=%d set nice=%d (verified=%d)\n", p->pid, value, p->nice); // Debug
   release(&p->lock);
   return 0;
 }
