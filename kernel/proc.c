@@ -869,17 +869,17 @@ nice(int value) {
   return 0;
 }
 
-void
+uint64
 startcfs(int quantum, int weight, int decay) {
   start_cfs_scheduler(quantum, weight, decay); // Implement in proc.c
 }
 
-void
+uint64
 stopcfs(void) {
   stop_cfs_scheduler(); // Implement this in `proc.c`
 }
 
-void getruntime(uint64 actual_addr, uint64 virtual_addr) {
+uint64 getruntime(uint64 actual_addr, uint64 virtual_addr) {
   int actual, virtual;  
 
   get_proc_runtime(myproc(), &actual, &virtual);
