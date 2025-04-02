@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include <limits.h>  // Added for INT_MAX
 
 struct cpu cpus[NCPU];
 
@@ -18,7 +19,7 @@ struct spinlock pid_lock;
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
-//For Proj 1c
+// For Proj 1c
 void cfs_scheduler(struct cpu *c);
 void start_cfs_scheduler(int quantum, int weight, int decay);
 void stop_cfs_scheduler(void);
@@ -33,7 +34,7 @@ int cfs_enabled = 0;  // Flag to enable/disable CFS
 int cfs_quantum;      // Time slice for CFS scheduling
 int cfs_weight;       // Weight for process priority
 int cfs_decay;        // Decay factor for vruntime adjustments
-int cfs_count = 0; // Number of processes in CFS queue
+int cfs_count = 0;    // Number of processes in CFS queue
 struct cfs_proc cfs_queue[NPROC]; // Array to store CFS process queue
 
 extern char trampoline[]; // trampoline.S
@@ -47,9 +48,7 @@ struct spinlock wait_lock;
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
 // guard page.
-void
-proc_mapstacks(pagetable_t kpgtbl)
-{
+void proc_mapstacks(pagetable_t kpgtbl) {
   struct proc *p;
   
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -62,13 +61,19 @@ proc_mapstacks(pagetable_t kpgtbl)
 }
 
 // initialize the proc table.
-void
-procinit(void)
-{
+void procinit(void) {
   struct proc *p;
   
   initlock(&pid_lock, "nextpid");
   initlock(&wait_lock, "wait_lock");
+  
+  // Initialize CFS queue
+  for(int i = 0; i < NPROC; i++) {
+    cfs_queue[i].p = 0;
+    cfs_queue[i].vruntime = 0;
+  }
+  cfs_count = 0;
+
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
       p->state = UNUSED;
@@ -79,27 +84,21 @@ procinit(void)
 // Must be called with interrupts disabled,
 // to prevent race with process being moved
 // to a different CPU.
-int
-cpuid()
-{
+int cpuid() {
   int id = r_tp();
   return id;
 }
 
 // Return this CPU's cpu struct.
 // Interrupts must be disabled.
-struct cpu*
-mycpu(void)
-{
+struct cpu* mycpu(void) {
   int id = cpuid();
   struct cpu *c = &cpus[id];
   return c;
 }
 
 // Return the current struct proc *, or zero if none.
-struct proc*
-myproc(void)
-{
+struct proc* myproc(void) {
   push_off();
   struct cpu *c = mycpu();
   struct proc *p = c->proc;
@@ -107,9 +106,7 @@ myproc(void)
   return p;
 }
 
-int
-allocpid()
-{
+int allocpid() {
   int pid;
   
   acquire(&pid_lock);
@@ -124,9 +121,7 @@ allocpid()
 // If found, initialize state required to run in the kernel,
 // and return with p->lock held.
 // If there are no free procs, or a memory allocation fails, return 0.
-static struct proc*
-allocproc(void)
-{
+static struct proc* allocproc(void) {
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -170,9 +165,7 @@ found:
 // free a proc structure and the data hanging from it,
 // including user pages.
 // p->lock must be held.
-static void
-freeproc(struct proc *p)
-{
+static void freeproc(struct proc *p) {
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
@@ -196,9 +189,7 @@ freeproc(struct proc *p)
 
 // Create a user page table for a given process, with no user memory,
 // but with trampoline and trapframe pages.
-pagetable_t
-proc_pagetable(struct proc *p)
-{
+pagetable_t proc_pagetable(struct proc *p) {
   pagetable_t pagetable;
 
   // An empty page table.
@@ -230,9 +221,7 @@ proc_pagetable(struct proc *p)
 
 // Free a process's page table, and free the
 // physical memory it refers to.
-void
-proc_freepagetable(pagetable_t pagetable, uint64 sz)
-{
+void proc_freepagetable(pagetable_t pagetable, uint64 sz) {
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
   uvmfree(pagetable, sz);
@@ -252,9 +241,7 @@ uchar initcode[] = {
 };
 
 // Set up first user process.
-void
-userinit(void)
-{
+void userinit(void) {
   struct proc *p;
 
   p = allocproc();
@@ -279,9 +266,7 @@ userinit(void)
 
 // Grow or shrink user memory by n bytes.
 // Return 0 on success, -1 on failure.
-int
-growproc(int n)
-{
+int growproc(int n) {
   uint64 sz;
   struct proc *p = myproc();
 
@@ -299,9 +284,7 @@ growproc(int n)
 
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
-int
-fork(void)
-{
+int fork(void) {
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
@@ -350,9 +333,7 @@ fork(void)
 
 // Pass p's abandoned children to init.
 // Caller must hold wait_lock.
-void
-reparent(struct proc *p)
-{
+void reparent(struct proc *p) {
   struct proc *pp;
 
   for(pp = proc; pp < &proc[NPROC]; pp++){
@@ -366,9 +347,7 @@ reparent(struct proc *p)
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait().
-void
-exit(int status)
-{
+void exit(int status) {
   struct proc *p = myproc();
 
   if(p == initproc)
@@ -410,9 +389,7 @@ exit(int status)
 
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
-int
-wait(uint64 addr)
-{
+int wait(uint64 addr) {
   struct proc *pp;
   int havekids, pid;
   struct proc *p = myproc();
@@ -457,16 +434,121 @@ wait(uint64 addr)
   }
 }
 
-// Per-CPU process scheduler.
-// Each CPU calls scheduler() after setting itself up.
-// Scheduler never returns.  It loops, doing:
-//  - choose a process to run.
-//  - swtch to start running that process.
-//  - eventually that process transfers control
-//    via swtch back to the scheduler.
-/*void
-scheduler(void)
-{
+int cfs = 0;                       // 0 for RR scheduler, 1 for fair scheduler
+
+int cfs_sched_latency = 128;       // Default length of scheduling latency
+int cfs_max_timeslice = 16;        // Max number of ticks for a process per scheduling latency
+int cfs_min_timeslice = 1;         // Min number of ticks for a process per scheduling latency
+
+// Nice to weight mapping (40 values from nice -20 to nice 19)
+int nice_to_weight[40] = {
+  88761, 71755, 56483, 46273, 36291, /* for nice = -20, …, -16 */
+  29154, 23254, 18705, 14949, 11916, /* for nice = -15, …, -11 */
+  9548, 7620, 6100, 4904, 3906,     /* for nice = -10, …, -6 */
+  3121, 2501, 1991, 1586, 1277,     /* for nice = -5, …, -1 */
+  1024, 820, 655, 526, 423,         /* for nice = 0, …, 4 */
+  335, 272, 215, 172, 137,          /* for nice = 5, …, 9 */
+  110, 87, 70, 56, 45,              /* for nice = 10, …, 14 */
+  36, 29, 23, 18, 15,               /* for nice = 15, …, 19 */
+};
+
+struct proc *cfs_current_proc = 0;  // The current process scheduled by the fair scheduler
+int cfs_proc_timeslice_len = 0;     // Number of ticks assigned to the current process
+int cfs_proc_timeslice_left = 0;    // Number of ticks left for the current process
+
+// Calculate sum of weights of all runnable processes
+int weight_sum() {
+  int sum = 0;
+  struct proc *p;
+  
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->state == RUNNABLE) {
+      sum += nice_to_weight[p->nice + 20];
+    }
+    release(&p->lock);
+  }
+  return sum;
+}
+
+// Find process with shortest vruntime (holding its lock)
+struct proc* shortest_runtime_proc() {
+  struct proc *p;
+  struct proc *min_proc = 0;
+  int min_vruntime = INT_MAX;
+  
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->state == RUNNABLE && p->vruntime < min_vruntime) {
+      min_vruntime = p->vruntime;
+      if (min_proc) release(&min_proc->lock);
+      min_proc = p;
+    } else {
+      release(&p->lock);
+    }
+  }
+  return min_proc; // Note: caller must release the lock!
+}
+
+// CFS scheduler implementation
+void cfs_scheduler(struct cpu *c) {
+  c->proc = 0;
+  
+  if (cfs_current_proc) {
+    cfs_proc_timeslice_left = cfs_proc_timeslice_left - 1;
+
+    if (cfs_proc_timeslice_left > 0 && cfs_current_proc->state == RUNNABLE) {
+      // Continue the current process if its timeslice is not exhausted
+      c->proc = cfs_current_proc;
+    } else if (cfs_proc_timeslice_left == 0 || 
+              (cfs_current_proc != 0 && cfs_current_proc->state != RUNNABLE)) {
+      // Update the vruntime for the current process
+      acquire(&cfs_current_proc->lock);
+      int weight = nice_to_weight[cfs_current_proc->nice + 20];
+      int inc = (cfs_proc_timeslice_len - cfs_proc_timeslice_left) * 1024 / weight;
+      if (inc < 1) inc = 1;
+      cfs_current_proc->vruntime += inc;
+
+      // Update runtime (increment actual runtime)
+      cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
+      release(&cfs_current_proc->lock);
+
+      printf("[CFS] Process %d used %d ticks of %d, vruntime now %d\n",
+             cfs_current_proc->pid, 
+             cfs_proc_timeslice_len - cfs_proc_timeslice_left, 
+             cfs_proc_timeslice_len,
+             cfs_current_proc->vruntime);
+    }
+  }
+
+  if (c->proc == 0) {
+    // Find the process with the shortest vruntime
+    struct proc *p = shortest_runtime_proc();
+    if (p != 0) {
+      // Calculate the timeslice length for the process
+      int weight = nice_to_weight[p->nice + 20];
+      int sum = weight_sum();
+      if (sum == 0) sum = 1; // Prevent division by zero
+      
+      cfs_proc_timeslice_len = (cfs_sched_latency * weight) / sum;
+      if (cfs_proc_timeslice_len < cfs_min_timeslice) cfs_proc_timeslice_len = cfs_min_timeslice;
+      if (cfs_proc_timeslice_len > cfs_max_timeslice) cfs_proc_timeslice_len = cfs_max_timeslice;
+
+      cfs_proc_timeslice_left = cfs_proc_timeslice_len;
+      cfs_current_proc = p;
+      c->proc = p;
+
+      printf("[CFS] Scheduling %d (nice=%d) for %d ticks\n", 
+             p->pid, p->nice, cfs_proc_timeslice_len);
+
+      p->state = RUNNING;
+      swtch(&c->context, &p->context);
+      release(&p->lock);
+    }
+  }
+}
+
+void scheduler(void) {
   struct proc *p;
   struct cpu *c = mycpu();
   
@@ -475,64 +557,26 @@ scheduler(void)
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
 
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        swtch(&c->context, &p->context);
+    if (cfs_enabled) {
+      cfs_scheduler(c);
+    } else {
+      // Default round-robin scheduler
+      for(p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
+        if(p->state == RUNNABLE) {
+          // Switch to chosen process
+          p->state = RUNNING;
+          c->proc = p;
+          swtch(&c->context, &p->context);
 
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
+          // Process is done running for now
+          c->proc = 0;
+        }
+        release(&p->lock);
       }
-      release(&p->lock);
     }
   }
-}*/
-
-int cfs = 0;                       // 0 for RR scheduler, 1 for fair scheduler
-
-void scheduler(void) {
-  struct proc *p;
-  for (;;) {
-      // Enable interrupts on this processor in RISC-V.
-      __asm__ volatile("csrs sstatus, %0" :: "r"(SSTATUS_SIE));
-
-      if (cfs_enabled) {
-          // Simple CFS scheduling: select process with smallest vruntime
-          struct proc *selected_proc = 0;
-          int min_vruntime = __INT_MAX__;
-
-          for (int i = 0; i < cfs_count; i++) {
-              if (cfs_queue[i].p->state == RUNNABLE && cfs_queue[i].vruntime < min_vruntime) {
-                  min_vruntime = cfs_queue[i].vruntime;
-                  selected_proc = cfs_queue[i].p;
-              }
-          }
-
-          if (selected_proc) {
-              selected_proc->state = RUNNING;
-              swtch(&mycpu()->context, &selected_proc->context);
-              selected_proc->runtime += 1; // Increment runtime
-          }
-      } else {
-          // Default round-robin scheduler
-          for (p = proc; p < &proc[NPROC]; p++) {
-              if (p->state != RUNNABLE)
-                  continue;
-
-              p->state = RUNNING;
-              swtch(&mycpu()->context, &p->context);
-              p->runtime += 1; // Track runtime
-          }
-      }
-  }
 }
-
 
 // Switch to scheduler.  Must hold only p->lock
 // and have changed proc->state. Saves and restores
@@ -541,9 +585,7 @@ void scheduler(void) {
 // be proc->intena and proc->noff, but that would
 // break in the few places where a lock is held but
 // there's no process.
-void
-sched(void)
-{
+void sched(void) {
   int intena;
   struct proc *p = myproc();
 
@@ -562,9 +604,7 @@ sched(void)
 }
 
 // Give up the CPU for one scheduling round.
-void
-yield(void)
-{
+void yield(void) {
   struct proc *p = myproc();
   acquire(&p->lock);
   p->state = RUNNABLE;
@@ -574,9 +614,7 @@ yield(void)
 
 // A fork child's very first scheduling by scheduler()
 // will swtch to forkret.
-void
-forkret(void)
-{
+void forkret(void) {
   static int first = 1;
 
   // Still holding p->lock from scheduler.
@@ -595,9 +633,7 @@ forkret(void)
 
 // Atomically release lock and sleep on chan.
 // Reacquires lock when awakened.
-void
-sleep(void *chan, struct spinlock *lk)
-{
+void sleep(void *chan, struct spinlock *lk) {
   struct proc *p = myproc();
   
   // Must acquire p->lock in order to
@@ -626,9 +662,7 @@ sleep(void *chan, struct spinlock *lk)
 
 // Wake up all processes sleeping on chan.
 // Must be called without any p->lock.
-void
-wakeup(void *chan)
-{
+void wakeup(void *chan) {
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -645,9 +679,7 @@ wakeup(void *chan)
 // Kill the process with the given pid.
 // The victim won't exit until it tries to return
 // to user space (see usertrap() in trap.c).
-int
-kill(int pid)
-{
+int kill(int pid) {
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++){
@@ -666,17 +698,13 @@ kill(int pid)
   return -1;
 }
 
-void
-setkilled(struct proc *p)
-{
+void setkilled(struct proc *p) {
   acquire(&p->lock);
   p->killed = 1;
   release(&p->lock);
 }
 
-int
-killed(struct proc *p)
-{
+int killed(struct proc *p) {
   int k;
   
   acquire(&p->lock);
@@ -688,9 +716,7 @@ killed(struct proc *p)
 // Copy to either a user address, or kernel address,
 // depending on usr_dst.
 // Returns 0 on success, -1 on error.
-int
-either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
-{
+int either_copyout(int user_dst, uint64 dst, void *src, uint64 len) {
   struct proc *p = myproc();
   if(user_dst){
     return copyout(p->pagetable, dst, src, len);
@@ -703,9 +729,7 @@ either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
 // Copy from either a user address, or kernel address,
 // depending on usr_src.
 // Returns 0 on success, -1 on error.
-int
-either_copyin(void *dst, int user_src, uint64 src, uint64 len)
-{
+int either_copyin(void *dst, int user_src, uint64 src, uint64 len) {
   struct proc *p = myproc();
   if(user_src){
     return copyin(p->pagetable, dst, src, len);
@@ -718,9 +742,7 @@ either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 // Print a process listing to console.  For debugging.
 // Runs when user types ^P on console.
 // No lock to avoid wedging a stuck machine further.
-void
-procdump(void)
-{
+void procdump(void) {
   static char *states[] = {
   [UNUSED]    "unused",
   [USED]      "used",
@@ -745,149 +767,38 @@ procdump(void)
   }
 }
 
-//For assignment 1c
-// void cfs_scheduler(void) {
-//   struct proc *p;
-//   struct proc *min_vruntime_proc = 0;
-
-  
-//   for(p = proc; p < &proc[NPROC]; p++) {
-//     if(p->state == RUNNABLE) {
-//       if(min_vruntime_proc == 0 || p->vruntime < min_vruntime_proc->vruntime) {
-//         min_vruntime_proc = p;
-//       }
-//     }
-//   }
-  
-//   if(min_vruntime_proc) {
-//     p = min_vruntime_proc;
-//     p->state = RUNNING;
-//     swtch(&cpus[cpuid()].context, &p->context);
-//     //Increment vruntime based on execution
-//     p->vruntime += 10; 
-//   }
-
-// }
-
-int cfs_sched_latency = 128;  // Default length of scheduling latency
-int cfs_max_timeslice = 16;   // Max number of ticks for a process per scheduling latency
-int cfs_min_timeslice = 1;    // Min number of ticks for a process per scheduling latency
-
-// In kernel/proc.c
-int nice_to_weight[40] = {
-  88761, 71755, 56483, 46273, 36291, /* for nice = -20, …, -16 */
-  29154, 23254, 18705, 14949, 11916, /* for nice = -15, …, -11 */
-  9548, 7620, 6100, 4904, 3906,     /* for nice = -10, …, -6 */
-  3121, 2501, 1991, 1586, 1277,     /* for nice = -5, …, -1 */
-  1024, 820, 655, 526, 423,         /* for nice = 0, …, 4 */
-  335, 272, 215, 172, 137,          /* for nice = 5, …, 9 */
-  110, 87, 70, 56, 45,              /* for nice = 10, …, 14 */
-  36, 29, 23, 18, 15,               /* for nice = 15, …, 19 */
-};
-
-// In kernel/proc.c
-
-struct proc *cfs_current_proc = 0;  // The current process scheduled by the fair scheduler
-int cfs_proc_timeslice_len = 0;     // Number of ticks assigned to the current process
-int cfs_proc_timeslice_left = 0;    // Number of ticks left for the current process
-
-// In kernel/proc.c
-int weight_sum() {
-  int sum = 0;
-  struct proc *p;
-  for (p = proc; p < &proc[NPROC]; p++) {
-    if (p->state == RUNNABLE) {
-      sum += nice_to_weight[p->nice + 20];
-    }
+// Project 1c system calls
+uint64 nice(int value) {
+  if(value < -20 || value > 19) {
+    return -1; // Invalid nice value
   }
-  return sum;
-}
-
-// In kernel/proc.c
-struct proc* shortest_runtime_proc() {
-  struct proc *p;
-  struct proc *min_proc = 0;
-  for (p = proc; p < &proc[NPROC]; p++) {
-    if (p->state == RUNNABLE) {
-      if (min_proc == 0 || p->vruntime < min_proc->vruntime) {
-        min_proc = p;
-      }
-    }
-  }
-  return min_proc;
-}
-
-// In kernel/proc.c
-void cfs_scheduler(struct cpu *c) {
-  c->proc = 0;
-  cfs_proc_timeslice_left = cfs_proc_timeslice_left - 1;
-
-  if (cfs_proc_timeslice_left > 0 && cfs_current_proc->state == RUNNABLE) {
-    // Continue the current process if its timeslice is not exhausted
-    c->proc = cfs_current_proc;
-  } else if (cfs_proc_timeslice_left == 0 || (cfs_current_proc != 0 && cfs_current_proc->state != RUNNABLE)) {
-    // Update the vruntime for the current process
-    int weight = nice_to_weight[cfs_current_proc->nice + 20];
-    int inc = (cfs_proc_timeslice_len - cfs_proc_timeslice_left) * 1024 / weight;
-    if (inc < 1) inc = 1;
-    cfs_current_proc->vruntime += inc;
-
-    // Update runtime (increment actual runtime)
-    cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
-
-    printf("[DEBUG CFS] Process %d used %d ticks of its assigned timeslice (totally %d ticks) and is swapped out!\n",
-           cfs_current_proc->pid, cfs_proc_timeslice_len - cfs_proc_timeslice_left, cfs_proc_timeslice_len);
-  }
-
-  if (c->proc == 0) {
-    // Find the process with the shortest vruntime
-    struct proc *p = shortest_runtime_proc();
-    if (p != 0) {
-      // Calculate the timeslice length for the process
-      int weight = nice_to_weight[p->nice + 20];
-      cfs_proc_timeslice_len = (cfs_sched_latency * weight) / weight_sum();
-      if (cfs_proc_timeslice_len < cfs_min_timeslice) cfs_proc_timeslice_len = cfs_min_timeslice;
-      if (cfs_proc_timeslice_len > cfs_max_timeslice) cfs_proc_timeslice_len = cfs_max_timeslice;
-
-      cfs_proc_timeslice_left = cfs_proc_timeslice_len;
-      cfs_current_proc = p;
-      c->proc = p;
-
-      printf("[DEBUG CFS] Process %d will run for a timeslice of %d ticks next!\n", p->pid, cfs_proc_timeslice_len);
-
-      acquire(&p->lock);
-      p->state = RUNNING;
-      swtch(&c->context, &p->context);
-      release(&p->lock);
-    }
-  }
-}
-
-uint64
-nice(int value) {
-  myproc()->nice = value;  // Assuming `nice` is a field in `struct proc`
+  struct proc *p = myproc();
+  acquire(&p->lock);
+  p->nice = value;
+  release(&p->lock);
   return 0;
 }
 
-uint64
-startcfs(int quantum, int weight, int decay) {
-  start_cfs_scheduler(quantum, weight, decay); // Implement in proc.c
+uint64 startcfs(int quantum, int weight, int decay) {
+  start_cfs_scheduler(quantum, weight, decay);
   return 0;
 }
 
-uint64
-stopcfs(void) {
-  stop_cfs_scheduler(); // Implement this in `proc.c`
+uint64 stopcfs(void) {
+  stop_cfs_scheduler();
   return 0;
 }
 
 uint64 getruntime(uint64 actual_addr, uint64 virtual_addr) {
   int actual, virtual;  
+  struct proc *p = myproc();
 
-  get_proc_runtime(myproc(), &actual, &virtual);
+  get_proc_runtime(p, &actual, &virtual);
 
-  copyout(myproc()->pagetable, actual_addr, (char*)&actual, sizeof(actual));
-  copyout(myproc()->pagetable, virtual_addr, (char*)&virtual, sizeof(virtual));
+  if(copyout(p->pagetable, actual_addr, (char*)&actual, sizeof(actual)) < 0 ||
+     copyout(p->pagetable, virtual_addr, (char*)&virtual, sizeof(virtual)) < 0) {
+    return -1;
+  }
   return 0;
 }
 
@@ -896,14 +807,18 @@ void start_cfs_scheduler(int quantum, int weight, int decay) {
   cfs_quantum = quantum;
   cfs_weight = weight;
   cfs_decay = decay;
+  printf("CFS scheduler enabled (quantum=%d, weight=%d, decay=%d)\n", quantum, weight, decay);
 }
 
 void stop_cfs_scheduler(void) {
   cfs_enabled = 0;
   cfs_count = 0; // Reset CFS process count
+  printf("CFS scheduler disabled\n");
 }
 
 void get_proc_runtime(struct proc *p, int *actual, int *virtual) {
-  *actual = p->runtime;  // Assuming runtime is the actual runtime of the process
-  *virtual = p->vruntime; // Assuming vruntime is the virtual runtime of the process
+  acquire(&p->lock);
+  *actual = p->runtime;
+  *virtual = p->vruntime;
+  release(&p->lock);
 }
