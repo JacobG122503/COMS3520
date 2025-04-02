@@ -471,23 +471,24 @@ int weight_sum() {
   return sum;
 }
 
-// Find process with shortest vruntime (holding its lock)
+// In shortest_runtime_proc():
 struct proc* shortest_runtime_proc() {
   struct proc *p;
   struct proc *min_proc = 0;
   int min_vruntime = INT_MAX;
   
-  for (p = proc; p < &proc[NPROC]; p++) {
-    acquire(&p->lock);
-    if (p->state == RUNNABLE && p->vruntime < min_vruntime) {
-      min_vruntime = p->vruntime;
-      if (min_proc) release(&min_proc->lock);
+  for(p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);  // Acquire lock before checking state
+    if(p->state == RUNNABLE && p->vruntime < min_vruntime) {
+      if(min_proc) release(&min_proc->lock);  // Release previous min proc
       min_proc = p;
+      min_vruntime = p->vruntime;
     } else {
-      release(&p->lock);
+      release(&p->lock);  // Release if not selected
     }
   }
-  return min_proc; // Note: caller must release the lock!
+  // Note: min_proc's lock is still held when returned!
+  return min_proc;
 }
 
 // CFS scheduler implementation
