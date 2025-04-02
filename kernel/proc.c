@@ -30,7 +30,6 @@ struct cfs_proc {
   int vruntime;    // Virtual runtime for the CFS
 };
 
-int cfs_enabled = 0;  // Flag to enable/disable CFS
 int cfs_quantum;      // Time slice for CFS scheduling
 int cfs_weight;       // Weight for process priority
 int cfs_decay;        // Decay factor for vruntime adjustments
@@ -456,14 +455,14 @@ struct proc *cfs_current_proc = 0;  // The current process scheduled by the fair
 int cfs_proc_timeslice_len = 0;     // Number of ticks assigned to the current process
 int cfs_proc_timeslice_left = 0;    // Number of ticks left for the current process
 
-// Calculate sum of weights of all runnable processes
 int weight_sum() {
   int sum = 0;
   struct proc *p;
-  
-  for (p = proc; p < &proc[NPROC]; p++) {
+  for(p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
-    if (p->state == RUNNABLE) {
+    if(p->state == RUNNABLE) {
+      printf("[WEIGHT] pid=%d nice=%d weight=%d\n",
+             p->pid, p->nice, nice_to_weight[p->nice+20]);
       sum += nice_to_weight[p->nice + 20];
     }
     release(&p->lock);
@@ -754,7 +753,7 @@ void procdump(void) {
 // Project 1c system calls
 uint64 nice(int value) {
   if(value < -20 || value > 19) {
-    return -1; // Invalid nice value
+    return -1; 
   }
   struct proc *p = myproc();
   acquire(&p->lock);
@@ -790,7 +789,7 @@ uint64 getruntime(uint64 actual_addr, uint64 virtual_addr) {
 }
 
 void start_cfs_scheduler(int quantum, int weight, int decay) {
-  cfs_enabled = 1;
+  cfs = 1;
   cfs_quantum = quantum;
   cfs_weight = weight;
   cfs_decay = decay;
@@ -798,7 +797,7 @@ void start_cfs_scheduler(int quantum, int weight, int decay) {
 }
 
 void stop_cfs_scheduler(void) {
-  cfs_enabled = 0;
+  cfs = 0;
   cfs_count = 0; // Reset CFS process count
   printf("CFS scheduler disabled\n");
 }
