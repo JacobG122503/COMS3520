@@ -46,3 +46,4 @@ int nice(int);
 void startcfs(int, int, int);
 void stopcfs(void);
 int getruntime(int*, int*);
+
