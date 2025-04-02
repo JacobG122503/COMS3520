@@ -872,11 +872,13 @@ nice(int value) {
 uint64
 startcfs(int quantum, int weight, int decay) {
   start_cfs_scheduler(quantum, weight, decay); // Implement in proc.c
+  return 0;
 }
 
 uint64
 stopcfs(void) {
   stop_cfs_scheduler(); // Implement this in `proc.c`
+  return 0;
 }
 
 uint64 getruntime(uint64 actual_addr, uint64 virtual_addr) {
@@ -886,6 +888,7 @@ uint64 getruntime(uint64 actual_addr, uint64 virtual_addr) {
 
   copyout(myproc()->pagetable, actual_addr, (char*)&actual, sizeof(actual));
   copyout(myproc()->pagetable, virtual_addr, (char*)&virtual, sizeof(virtual));
+  return 0;
 }
 
 void start_cfs_scheduler(int quantum, int weight, int decay) {
