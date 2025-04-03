@@ -42,8 +42,8 @@ void *memcpy(void *, const void *, uint);
 
 
 //For assignment 1c
-int nice(int);
-void startcfs(int, int, int);
-void stopcfs(void);
-int getruntime(int*, int*);
+uint64 nice(int);
+uint64 startcfs(int, int, int);
+uint64 stopcfs(void);
+uint64 getruntime(uint64 , uint64 );
 
