@@ -103,7 +103,7 @@ extern int getruntime(int*, int*);
 
 // Create the wrapper function for sys_getruntime
 uint64 sys_getruntime(void) {
-    uint64 start, end;
+    int start, end;
     return getruntime(&start, &end);  // Call the original getruntime
 }
 
