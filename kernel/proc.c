@@ -531,7 +531,6 @@ void cfs_scheduler(struct cpu *c) {
         int inc = (cfs_proc_timeslice_len - cfs_proc_timeslice_left) * 1024 / weight;
         inc = (inc < 1) ? 1 : inc;
 
-        mycpu()->proc = cfs_current_proc;
         cfs_current_proc->vruntime += inc;
         cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);  
         
@@ -566,7 +565,9 @@ void cfs_scheduler(struct cpu *c) {
              p->pid, cfs_proc_timeslice_len);
       
       // Switch to new process
+      acquire(&p->lock);  // Lock process before switching
       p->state = RUNNING;
+      c->proc = cfs_current_proc;
       swtch(&c->context, &p->context);
       
       // Process returned from scheduler, release its lock
