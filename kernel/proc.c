@@ -510,6 +510,9 @@ struct proc* shortest_runtime_proc() {
   return min_proc;  // Note: min_proc's lock is still held!
 }
 
+int TESTruntime;
+int TESTvtruntime;
+
 void cfs_scheduler(struct cpu *c) {
   c->proc = 0;
   
@@ -533,6 +536,8 @@ void cfs_scheduler(struct cpu *c) {
 
         cfs_current_proc->vruntime += inc;
         cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);  
+        TESTruntime += inc;
+        TESTvtruntime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
         
         // Debug: Process used its timeslice and is swapping out
         printf("[DEBUG CFS] Process %d used %d ticks of its assigned timeslice (totally %d ticks) and swapped out!\n", 
@@ -823,8 +828,8 @@ int getruntime(int *runtime, int *vruntime) {
 
   get_proc_runtime(p, &actual, &virtual);
 
-  *runtime = actual;
-  *vruntime = virtual;
+  *runtime = TESTruntime;
+  *vruntime = TESTvtruntime;
 
   return 0; 
 }
