@@ -465,30 +465,25 @@ int cfs_proc_timeslice_left = 0;    // Number of ticks left for the current proc
 int weight_sum() {
   int sum = 0;
   struct proc *p;
-  printf("7");
   
-  for(int i = 0; i < NPROC; i++) {
-    p = &proc[i];
-    printf("8");
-    if (!p) continue;
-    
-    printf("Attempting to acquire lock at %p for process at %p\n", &p->lock, p);
+  for (p = proc; p < proc + NPROC; p++) {
+    // Quick check without acquiring the lock.
+    if (p->state != RUNNABLE)
+      continue;
+      
     acquire(&p->lock);
-    printf("9");
-    if(p->state == RUNNABLE) {
-      int nice_index = p->nice + 20;
-      if(nice_index >= 0 && nice_index < 40) {
-        sum += nice_to_weight[nice_index];
-      } else {
-        sum += nice_to_weight[20];
-      }
+    // Re-check the state after acquiring the lock.
+    if (p->state == RUNNABLE) {
+      int index = p->nice + 20;
+      if (index < 0 || index >= 40)
+        index = 20; // Fallback weight if out of range.
+      sum += nice_to_weight[index];
     }
-    printf("10");
     release(&p->lock);
   }
-  printf("11");
   return sum;
 }
+
 
 struct proc* shortest_runtime_proc() {
   struct proc *p;
