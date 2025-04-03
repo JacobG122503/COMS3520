@@ -467,15 +467,19 @@ int weight_sum() {
   struct proc *p;
   
   for(p = proc; p < &proc[NPROC]; p++) {
+    if(&p->lock == 0) continue;
+    
     acquire(&p->lock);
     if(p->state == RUNNABLE) {
-      printf("[WEIGHT] pid=%d nice=%d weight=%d\n",
-             p->pid, p->nice, nice_to_weight[p->nice+20]);
-      sum += nice_to_weight[p->nice + 20];
+      int nice_index = p->nice + 20;
+      if(nice_index >= 0 && nice_index < 40) {
+        sum += nice_to_weight[nice_index];
+      } else {
+        sum += nice_to_weight[20];
+      }
     }
     release(&p->lock);
   }
-  printf("[WEIGHT] Total sum=%d\n", sum);  // Debug print
   return sum;
 }
 
