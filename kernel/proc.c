@@ -458,7 +458,7 @@ int nice_to_weight[40] = {
   36, 29, 23, 18, 15,               /* for nice = 15, …, 19 */
 };
 
-struct proc *cfs_current_proc = 0;  // The current process scheduled by the fair scheduler
+struct proc *cfs_current_proc = 0;  
 int cfs_proc_timeslice_len = 0;     // Number of ticks assigned to the current process
 int cfs_proc_timeslice_left = 0;    // Number of ticks left for the current process
 
@@ -504,7 +504,9 @@ void cfs_scheduler(struct cpu *c) {
   c->proc = 0;
   
   // Handle current process
+  printf("1");
   if (cfs_current_proc) {
+    printf("2");
     cfs_proc_timeslice_left--;
     
     if (cfs_proc_timeslice_left > 0) {
@@ -530,14 +532,18 @@ void cfs_scheduler(struct cpu *c) {
       release(&cfs_current_proc->lock);
     }
   }
-
+  printf("3");
   // Find new process if needed
   if (c->proc == 0) {
+    printf("4");
     struct proc *p = shortest_runtime_proc();
     if (p) {
+      printf("5");
       // Calculate timeslice
       int weight = nice_to_weight[p->nice + 20];
+      printf("6");
       int sum = weight_sum();
+      printf("7");
       if (sum == 0) sum = 1;  // Prevent division by zero
       
       cfs_proc_timeslice_len = (cfs_sched_latency * weight) / sum;
