@@ -776,15 +776,18 @@ void procdump(void) {
 }
 
 uint64 nice(int value) {
-  if(value < -20 || value > 19) {
-    return -1; 
-  }
   struct proc *p = myproc();
-  acquire(&p->lock);  // Must hold lock to modify process state
+
+  if (value < -20 || value > 19) {
+      return p->nice;  // Return current nice value instead of -1
+  }
+
+  acquire(&p->lock);
   p->nice = value;
-  printf("[NICE] pid=%d set nice=%d (verified=%d)\n", p->pid, value, p->nice); // Debug
+  printf("[NICE] pid=%d set nice=%d (verified=%d)\n", p->pid, value, p->nice);
   release(&p->lock);
-  return 0;
+
+  return p->nice;
 }
 
 uint64 startcfs(int quantum, int weight, int decay) {
