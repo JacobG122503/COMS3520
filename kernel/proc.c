@@ -533,8 +533,13 @@ void cfs_scheduler(struct cpu *c) {
         cfs_current_proc->vruntime += inc;
         cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
 
-        c->proc->vruntime += inc;
-        c->proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
+
+        struct proc *p = myproc();  
+        acquire(&p->lock);
+        p->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
+        p->vruntime += inc;
+        release(&p->lock);
+
 
         printf("[CODE TEST] Process %d Updated: runtime = %d, vruntime = %d\n", 
           cfs_current_proc->pid, cfs_current_proc->runtime, cfs_current_proc->vruntime);   
