@@ -572,8 +572,10 @@ void scheduler(void) {
     intr_on();
     
     if (cfs) {  // Changed from cfs_enabled to cfs
+      printf("ALMOST GOT THERE BRUH");
       cfs_scheduler(c);
     } else {
+      printf("OG PRINT");
       // Original RR scheduler
       struct proc *p;
       for(p = proc; p < &proc[NPROC]; p++) {
