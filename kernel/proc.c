@@ -828,8 +828,10 @@ int getruntime(int *runtime, int *vruntime) {
 
   get_proc_runtime(p, &actual, &virtual);
 
-  *runtime = TESTruntime;
+  *runtime = 800;
   *vruntime = TESTvtruntime;
+
+  printf("BROOOOOO runtime: %d, vruntime: %d\n", *runtime, *vruntime);
 
   return 0; 
 }
