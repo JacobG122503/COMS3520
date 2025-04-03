@@ -780,7 +780,7 @@ uint64 nice(int value) {
 
   acquire(&p->lock);
   p->nice = value;
-  printf("[NICE] pid=%d set nice=%d (verified=%d)\n", p->pid, value, p->nice);
+  //printf("[NICE] pid=%d set nice=%d (verified=%d)\n", p->pid, value, p->nice);
   release(&p->lock);
 
   return p->nice;
