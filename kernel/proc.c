@@ -465,11 +465,14 @@ int cfs_proc_timeslice_left = 0;    // Number of ticks left for the current proc
 int weight_sum() {
   int sum = 0;
   struct proc *p;
+  printf("7");
   
   for(p = proc; p < &proc[NPROC]; p++) {
+    printf("8");
     if(&p->lock == 0) continue;
     
     acquire(&p->lock);
+    printf("9");
     if(p->state == RUNNABLE) {
       int nice_index = p->nice + 20;
       if(nice_index >= 0 && nice_index < 40) {
@@ -478,8 +481,10 @@ int weight_sum() {
         sum += nice_to_weight[20];
       }
     }
+    printf("10");
     release(&p->lock);
   }
+  printf("11");
   return sum;
 }
 
@@ -547,7 +552,7 @@ void cfs_scheduler(struct cpu *c) {
       int weight = nice_to_weight[p->nice + 20];
       printf("6");
       int sum = weight_sum();
-      printf("7");
+      printf("DONE");
       if (sum == 0) sum = 1;  // Prevent division by zero
       
       cfs_proc_timeslice_len = (cfs_sched_latency * weight) / sum;
