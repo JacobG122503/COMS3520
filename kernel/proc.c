@@ -470,6 +470,9 @@ int weight_sum() {
   for(p = proc; p < proc + NPROC; p++) {
     printf("8");
     if (!p) continue;
+
+    printf("Processing p: %p\n", p);
+    printf("Lock address: %p\n", &p->lock);
     
     acquire(&p->lock);
     printf("9");
