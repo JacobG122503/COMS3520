@@ -440,11 +440,10 @@ int wait(uint64 addr) {
   }
 }
 
-int cfs;                       // 0 for RR scheduler, 1 for fair scheduler
-
-int cfs_sched_latency = 128;       // Default length of scheduling latency
-int cfs_max_timeslice = 16;        // Max number of ticks for a process per scheduling latency
-int cfs_min_timeslice = 1;         // Min number of ticks for a process per scheduling latency
+int cfs;
+int cfs_sched_latency;     
+int cfs_max_timeslice;
+int cfs_min_timeslice;
 
 // Nice to weight mapping (40 values from nice -20 to nice 19)
 int nice_to_weight[40] = {
