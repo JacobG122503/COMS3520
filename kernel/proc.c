@@ -814,6 +814,7 @@ int stopcfs(void) {
 
 int getruntime(int *runtime, int *vruntime) {
   struct proc *p = myproc();  
+  if (!p) return -1;
   int actual, virtual;
 
   get_proc_runtime(p, &actual, &virtual);
@@ -826,6 +827,8 @@ int getruntime(int *runtime, int *vruntime) {
 
 
 void get_proc_runtime(struct proc *p, int *actual, int *virtual) {
+  acquire(&p->lock);
   *actual = p->runtime;
   *virtual = p->vruntime;
+  release(&p->lock);
 }
