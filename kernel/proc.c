@@ -565,9 +565,7 @@ void cfs_scheduler(struct cpu *c) {
              p->pid, cfs_proc_timeslice_len);
       
       // Switch to new process
-      acquire(&p->lock);  // Lock process before switching
       p->state = RUNNING;
-      c->proc = cfs_current_proc;
       swtch(&c->context, &p->context);
       
       // Process returned from scheduler, release its lock
