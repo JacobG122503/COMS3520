@@ -322,10 +322,6 @@ int fork(void) {
 
   pid = np->pid;
 
-  // Add debug print to verify copying
-  printf("[FORK] pid=%d forked to %d (nice=%d, vruntime=%d)\n", 
-         p->pid, np->pid, np->nice, np->vruntime);
-
   release(&np->lock);
 
   // Set parent while holding wait_lock
