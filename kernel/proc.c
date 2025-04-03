@@ -440,7 +440,7 @@ int wait(uint64 addr) {
   }
 }
 
-int cfs = 0;                       // 0 for RR scheduler, 1 for fair scheduler
+int cfs;                       // 0 for RR scheduler, 1 for fair scheduler
 
 int cfs_sched_latency = 128;       // Default length of scheduling latency
 int cfs_max_timeslice = 16;        // Max number of ticks for a process per scheduling latency
