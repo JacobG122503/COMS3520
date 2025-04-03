@@ -809,28 +809,23 @@ int startcfs(int quantum, int weight, int decay) {
 
 int stopcfs(void) {
   cfs = 0;
-  printf("CFS scheduler disabled\n");
   return 0;
 }
 
 int getruntime(int *runtime, int *vruntime) {
-  struct proc *p = myproc();  // Get current process
+  struct proc *p = myproc();  
   int actual, virtual;
 
-  // Retrieve the actual and virtual runtime values from the current process
   get_proc_runtime(p, &actual, &virtual);
 
-  // Store the retrieved runtime values into the provided pointers
   *runtime = actual;
   *vruntime = virtual;
 
-  return 0;  // Indicate success
+  return 0; 
 }
 
 
 void get_proc_runtime(struct proc *p, int *actual, int *virtual) {
-  acquire(&p->lock);
   *actual = p->runtime;
   *virtual = p->vruntime;
-  release(&p->lock);
 }
