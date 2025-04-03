@@ -532,6 +532,9 @@ void cfs_scheduler(struct cpu *c) {
         inc = (inc < 1) ? 1 : inc;
         cfs_current_proc->vruntime += inc;
         cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
+
+        printf("[CODE TEST] Process %d Updated: runtime = %d, vruntime = %d\n", 
+          cfs_current_proc->pid, cfs_current_proc->runtime, cfs_current_proc->vruntime);   
         
         // Debug: Process used its timeslice and is swapping out
         printf("[DEBUG CFS] Process %d used %d ticks of its assigned timeslice (totally %d ticks) and swapped out!\n", 
