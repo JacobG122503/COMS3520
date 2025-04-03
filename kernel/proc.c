@@ -779,7 +779,7 @@ void procdump(void) {
   }
 }
 
-uint64 nice(int value) {
+int nice(int value) {
   struct proc *p = myproc();
 
   if (value < -20 || value > 19) {
@@ -793,7 +793,7 @@ uint64 nice(int value) {
   return p->nice;
 }
 
-uint64 startcfs(int quantum, int weight, int decay) {
+int startcfs(int quantum, int weight, int decay) {
   cfs = 1;
   cfs_sched_latency = quantum;
   cfs_max_timeslice = weight;
@@ -801,7 +801,7 @@ uint64 startcfs(int quantum, int weight, int decay) {
   return 0;
 }
 
-uint64 stopcfs(void) {
+int stopcfs(void) {
   cfs = 0;
   printf("CFS scheduler disabled\n");
   return 0;

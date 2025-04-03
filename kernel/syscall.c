@@ -96,10 +96,10 @@ extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
 
 // For assignment 1c
-extern uint64 nice(int);
-extern uint64 startcfs(int , int , int );
-extern uint64 stopcfs(void);
-extern uint64 getruntime(uint64*, uint64*);
+extern int nice(int);
+extern int startcfs(int , int , int );
+extern int stopcfs(void);
+extern int getruntime(int*, int*);
 
 // Create the wrapper function for sys_getruntime
 uint64 sys_getruntime(void) {
