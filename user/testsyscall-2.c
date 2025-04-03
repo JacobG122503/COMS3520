@@ -30,7 +30,9 @@ main(int argc, char* argv[])
 
 	//set up parent process and start cfs
 	nice(3);
+        printf("[DEBUG] Before starting CFS\n");
 	startcfs(100,20,2);
+        printf("[DEBUG] AFTERRRR starting CFS\n");
 	printf("\n[START] Process (pid:%d) has started cfs!\n\n", getpid());
 
 	//create 10 child processes: first 5 have lower priority than the last 5
