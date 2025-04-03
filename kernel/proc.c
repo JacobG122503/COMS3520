@@ -21,8 +21,8 @@ static void freeproc(struct proc *p);
 
 // For Proj 1c
 void cfs_scheduler(struct cpu *c);
-void start_cfs_scheduler(int quantum, int weight, int decay);
-void stop_cfs_scheduler(void);
+uint64 startcfs(int quantum, int weight, int decay);
+uint64 stopcfs(void);
 void get_proc_runtime(struct proc *p, int *actual, int *virtual);
 
 struct cfs_proc {
@@ -572,10 +572,8 @@ void scheduler(void) {
     intr_on();
     
     if (cfs) {  // Changed from cfs_enabled to cfs
-      printf("ALMOST GOT THERE BRUH");
       cfs_scheduler(c);
     } else {
-      printf("OG PRINT");
       // Original RR scheduler
       struct proc *p;
       for(p = proc; p < &proc[NPROC]; p++) {
@@ -820,20 +818,6 @@ uint64 getruntime(uint64 actual_addr, uint64 virtual_addr) {
     return -1;
   }
   return 0;
-}
-
-void start_cfs_scheduler(int quantum, int weight, int decay) {
-  cfs = 1;
-  cfs_quantum = quantum;
-  cfs_weight = weight;
-  cfs_decay = decay;
-  printf("CFS scheduler enabled (quantum=%d, weight=%d, decay=%d)\n", quantum, weight, decay);
-}
-
-void stop_cfs_scheduler(void) {
-  cfs = 0;
-  cfs_count = 0; // Reset CFS process count
-  printf("CFS scheduler disabled\n");
 }
 
 void get_proc_runtime(struct proc *p, int *actual, int *virtual) {
