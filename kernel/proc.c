@@ -312,7 +312,7 @@ int fork(void) {
   acquire(&p->lock);  // Protect parent's fields
   np->nice = p->nice;
   np->vruntime = p->vruntime;  // Start with parent's vruntime
-  np->runtime = 0;             // Child starts fresh
+  np->runtime = p->runtime;  // Inherit runtime from parent
   release(&p->lock);
 
   // Increment reference counts on open file descriptors.
