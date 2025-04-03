@@ -21,8 +21,8 @@ static void freeproc(struct proc *p);
 
 // For Proj 1c
 void cfs_scheduler(struct cpu *c);
-uint64 startcfs(int quantum, int weight, int decay);
-uint64 stopcfs(void);
+int startcfs(int quantum, int weight, int decay);
+int stopcfs(void);
 void get_proc_runtime(struct proc *p, int *actual, int *virtual);
 
 struct cfs_proc {
