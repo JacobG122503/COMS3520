@@ -522,6 +522,10 @@ void cfs_scheduler(struct cpu *c) {
         inc = (inc < 1) ? 1 : inc;
         cfs_current_proc->vruntime += inc;
         cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
+        
+        // Debug: Process used its timeslice and is swapping out
+        printf("[DEBUG CFS] Process %d used %d ticks of its assigned timeslice (totally %d ticks) and swapped out!\n", 
+               cfs_current_proc->pid, cfs_proc_timeslice_len - cfs_proc_timeslice_left, cfs_current_proc->runtime);
       }
       release(&cfs_current_proc->lock);
     }
@@ -545,6 +549,10 @@ void cfs_scheduler(struct cpu *c) {
       cfs_proc_timeslice_left = cfs_proc_timeslice_len;
       cfs_current_proc = p;
       c->proc = p;
+      
+      // Debug: New process scheduled
+      printf("[DEBUG CFS] Process %d scheduled to run for a timeslice of %d ticks next!\n", 
+             p->pid, cfs_proc_timeslice_len);
       
       // Switch to new process
       p->state = RUNNING;
@@ -780,19 +788,16 @@ uint64 nice(int value) {
 
   acquire(&p->lock);
   p->nice = value;
-  //printf("[NICE] pid=%d set nice=%d (verified=%d)\n", p->pid, value, p->nice);
   release(&p->lock);
 
   return p->nice;
 }
 
 uint64 startcfs(int quantum, int weight, int decay) {
-  cfs = 1;  // This is the flag the scheduler checks
+  cfs = 1;
   cfs_sched_latency = quantum;
   cfs_max_timeslice = weight;
   cfs_min_timeslice = decay;
-  printf("CFS scheduler enabled (quantum=%d, weight=%d, decay=%d)\n", 
-         quantum, weight, decay);
   return 0;
 }
 
