@@ -123,6 +123,10 @@ uint64 sys_startcfs(void) {
     return startcfs(arg1, arg2, arg3);  // Call the original startcfs function
 }
 
+uint64 sys_stopcfs(void) {
+  return (uint64)stopcfs();  // Ensure correct return type
+}
+
 // Update the syscall table with wrappers
 static uint64 (*syscalls[])(void) = {
     [SYS_fork]    sys_fork,
@@ -146,7 +150,7 @@ static uint64 (*syscalls[])(void) = {
     [SYS_link]    sys_link,
     [SYS_mkdir]   sys_mkdir,
     [SYS_close]   sys_close,
-    [SYS_stopcfs] stopcfs,
+    [SYS_stopcfs] sys_stopcfs,
     [SYS_nice]    sys_nice,
     [SYS_startcfs] sys_startcfs,
     [SYS_getruntime] sys_getruntime,
