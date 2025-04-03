@@ -467,7 +467,8 @@ int weight_sum() {
   struct proc *p;
   printf("7");
   
-  for(p = proc; p < proc + NPROC; p++) {
+  for(int i = 0; i < NPROC; i++) {
+    p = &proc[i];
     printf("8");
     if (!p) continue;
 
