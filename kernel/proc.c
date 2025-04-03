@@ -807,18 +807,20 @@ uint64 stopcfs(void) {
   return 0;
 }
 
-uint64 getruntime(uint64 actual_addr, uint64 virtual_addr) {
-  int actual, virtual;  
-  struct proc *p = myproc();
+int getruntime(int *runtime, int *vruntime) {
+  struct proc *p = myproc();  // Get current process
+  int actual, virtual;
 
+  // Retrieve the actual and virtual runtime values from the current process
   get_proc_runtime(p, &actual, &virtual);
 
-  if(copyout(p->pagetable, actual_addr, (char*)&actual, sizeof(actual)) < 0 ||
-     copyout(p->pagetable, virtual_addr, (char*)&virtual, sizeof(virtual)) < 0) {
-    return -1;
-  }
-  return 0;
+  // Store the retrieved runtime values into the provided pointers
+  *runtime = actual;
+  *vruntime = virtual;
+
+  return 0;  // Indicate success
 }
+
 
 void get_proc_runtime(struct proc *p, int *actual, int *virtual) {
   acquire(&p->lock);

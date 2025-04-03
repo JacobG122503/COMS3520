@@ -45,5 +45,5 @@ void *memcpy(void *, const void *, uint);
 uint64 nice(int);
 uint64 startcfs(int, int, int);
 uint64 stopcfs(void);
-uint64 getruntime(uint64 , uint64 );
+int getruntime(int *, int *);
 
