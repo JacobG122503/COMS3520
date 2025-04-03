@@ -23,18 +23,12 @@ static void freeproc(struct proc *p);
 void cfs_scheduler(struct cpu *c);
 int startcfs(int quantum, int weight, int decay);
 int stopcfs(void);
-void get_proc_runtime(struct proc *p, int *actual, int *virtual);
-
-struct cfs_proc {
-  struct proc *p;  // Pointer to the process
-  int vruntime;    // Virtual runtime for the CFS
-};
+void get_proc_runtime(struct proc *p, int *actual, int *virtual);;
 
 int cfs_quantum;      // Time slice for CFS scheduling
 int cfs_weight;       // Weight for process priority
 int cfs_decay;        // Decay factor for vruntime adjustments
 int cfs_count = 0;    // Number of processes in CFS queue
-struct cfs_proc cfs_queue[NPROC]; // Array to store CFS process queue
 
 extern char trampoline[]; // trampoline.S
 
@@ -56,27 +50,6 @@ void proc_mapstacks(pagetable_t kpgtbl) {
       panic("kalloc");
     uint64 va = KSTACK((int) (p - proc));
     kvmmap(kpgtbl, va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
-  }
-}
-
-// initialize the proc table.
-void procinit(void) {
-  struct proc *p;
-  
-  initlock(&pid_lock, "nextpid");
-  initlock(&wait_lock, "wait_lock");
-  
-  // Initialize CFS queue
-  for(int i = 0; i < NPROC; i++) {
-    cfs_queue[i].p = 0;
-    cfs_queue[i].vruntime = 0;
-  }
-  cfs_count = 0;
-
-  for(p = proc; p < &proc[NPROC]; p++) {
-      initlock(&p->lock, "proc");
-      p->state = UNUSED;
-      p->kstack = KSTACK((int) (p - proc));
   }
 }
 
@@ -532,14 +505,6 @@ void cfs_scheduler(struct cpu *c) {
         inc = (inc < 1) ? 1 : inc;
         cfs_current_proc->vruntime += inc;
         cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
-
-
-        struct proc *p = myproc();  
-        acquire(&p->lock);
-        p->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
-        p->vruntime += inc;
-        release(&p->lock);
-
 
         printf("[CODE TEST] Process %d Updated: runtime = %d, vruntime = %d\n", 
           cfs_current_proc->pid, cfs_current_proc->runtime, cfs_current_proc->vruntime);   
