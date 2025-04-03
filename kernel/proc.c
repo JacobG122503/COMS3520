@@ -312,7 +312,7 @@ int fork(void) {
   acquire(&p->lock);  // Protect parent's fields
   np->nice = p->nice;
   np->vruntime = p->vruntime;  // Start with parent's vruntime
-  np->runtime = p->runtime;  // Inherit runtime from parent
+  np->runtime = 0;             // Child starts fresh
   release(&p->lock);
 
   // Increment reference counts on open file descriptors.
@@ -532,6 +532,9 @@ void cfs_scheduler(struct cpu *c) {
         inc = (inc < 1) ? 1 : inc;
         cfs_current_proc->vruntime += inc;
         cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
+
+        c->proc->vruntime += inc;
+        c->proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);
 
         printf("[CODE TEST] Process %d Updated: runtime = %d, vruntime = %d\n", 
           cfs_current_proc->pid, cfs_current_proc->runtime, cfs_current_proc->vruntime);   
