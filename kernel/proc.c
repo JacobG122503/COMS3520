@@ -471,10 +471,8 @@ int weight_sum() {
     p = &proc[i];
     printf("8");
     if (!p) continue;
-
-    printf("Processing p: %p\n", p);
-    printf("Lock address: %p\n", &p->lock);
     
+    printf("Attempting to acquire lock at %p for process at %p\n", &p->lock, p);
     acquire(&p->lock);
     printf("9");
     if(p->state == RUNNABLE) {
