@@ -531,9 +531,7 @@ void cfs_scheduler(struct cpu *c) {
         int inc = (cfs_proc_timeslice_len - cfs_proc_timeslice_left) * 1024 / weight;
         inc = (inc < 1) ? 1 : inc;
 
-        printf("[FORTNITE] Updating runtime for process %d (state=%d)\n", 
-       cfs_current_proc->pid, cfs_current_proc->state);
-
+        mycpu()->proc = cfs_current_proc;
         cfs_current_proc->vruntime += inc;
         cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);  
         
