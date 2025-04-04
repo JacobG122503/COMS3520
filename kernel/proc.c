@@ -826,7 +826,7 @@ int getruntime(int *runtime, int *vruntime) {
   *runtime = actual;
   *vruntime = virtual;
 
-  printf("BROOOOOOruntime: %d, vruntime: %d\n", *runtime, *vruntime);
+  printf("[SUMMARY] process (pid=%d): finishes comutation. During CFS: actual runtime = %d; virtual runtime = %d\n", getpid(), *runtime, *vruntime);
 
   return 0; 
 }

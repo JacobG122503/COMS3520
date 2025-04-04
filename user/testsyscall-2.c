@@ -70,7 +70,8 @@ main(int argc, char* argv[])
 	read(fd[0],msg,128);
 	int runtime[2];
         if(getruntime(&runtime[0], &runtime[1])==0)
-            printf("[SUMMARY] process (pid=%d): finishes comutation. During CFS: actual runtime = %d; virtual runtime = %d\n", mypid, runtime[0], runtime[1]);
+            //printf("[SUMMARY] process (pid=%d): finishes comutation. During CFS: actual runtime = %d; virtual runtime = %d\n", mypid, runtime[0], runtime[1]);
+            printf("");
         else
             printf("\n [ERROR] Process (pid=%d): something wrong with getruntime!\n\n", mypid);
 	write(fd[1],msg,128);
