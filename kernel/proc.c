@@ -816,17 +816,17 @@ int stopcfs(void) {
   return 0;
 }
 
-int getruntime(int *runtime, int *vruntime) {
+int getruntime(int *pid, int *vruntime) {
   struct proc *p = myproc();  
   if (!p) return -1;
   int actual, virtual;
 
   get_proc_runtime(p, &actual, &virtual);
 
-  *runtime = actual;
-  *vruntime = virtual;
+  // *runtime = actual;
+  // *vruntime = virtual;
 
-  printf("[SUMMARY] process (pid=%d): finishes comutation. During CFS: actual runtime = %d; virtual runtime = %d\n", getpid(), *runtime, *vruntime);
+  printf("[SUMMARY] process (pid=%d): finishes comutation. During CFS: actual runtime = %d; virtual runtime = %d\n", *pid, actual, virtual);
 
   return 0; 
 }
