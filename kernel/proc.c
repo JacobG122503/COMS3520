@@ -5,7 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
-#include <limits.h>  // Added for INT_MAX
+#include <limits.h>
 
 struct cpu cpus[NCPU];
 
@@ -19,34 +19,30 @@ struct spinlock pid_lock;
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
-// For Proj 1c
+//CFS scheduler main function
 void cfs_scheduler(struct cpu *c);
+//Start CFS with given params
 int startcfs(int quantum, int weight, int decay);
+//Stop CFS
 int stopcfs(void);
+//Get process runtime info
 void get_proc_runtime(struct proc *p, int *actual, int *virtual);
 
 struct cfs_proc {
-  struct proc *p;  // Pointer to the process
-  int vruntime;    // Virtual runtime for the CFS
+  struct proc *p;
+  int vruntime;
 };
 
-int cfs_quantum;      // Time slice for CFS scheduling
-int cfs_weight;       // Weight for process priority
-int cfs_decay;        // Decay factor for vruntime adjustments
-int cfs_count = 0;    // Number of processes in CFS queue
-struct cfs_proc cfs_queue[NPROC]; // Array to store CFS process queue
+int cfs_quantum;
+int cfs_weight;
+int cfs_decay;
+int cfs_count = 0;
+struct cfs_proc cfs_queue[NPROC];
 
-extern char trampoline[]; // trampoline.S
+extern char trampoline[];
 
-// helps ensure that wakeups of wait()ing
-// parents are not lost. helps obey the
-// memory model when using p->parent.
-// must be acquired before any p->lock.
 struct spinlock wait_lock;
 
-// Allocate a page for each process's kernel stack.
-// Map it high in memory, followed by an invalid
-// guard page.
 void proc_mapstacks(pagetable_t kpgtbl) {
   struct proc *p;
   
@@ -59,14 +55,12 @@ void proc_mapstacks(pagetable_t kpgtbl) {
   }
 }
 
-// initialize the proc table.
 void procinit(void) {
   struct proc *p;
   
   initlock(&pid_lock, "nextpid");
   initlock(&wait_lock, "wait_lock");
   
-  // Initialize CFS queue
   for(int i = 0; i < NPROC; i++) {
     cfs_queue[i].p = 0;
     cfs_queue[i].vruntime = 0;
@@ -80,23 +74,17 @@ void procinit(void) {
   }
 }
 
-// Must be called with interrupts disabled,
-// to prevent race with process being moved
-// to a different CPU.
 int cpuid() {
   int id = r_tp();
   return id;
 }
 
-// Return this CPU's cpu struct.
-// Interrupts must be disabled.
 struct cpu* mycpu(void) {
   int id = cpuid();
   struct cpu *c = &cpus[id];
   return c;
 }
 
-// Return the current struct proc *, or zero if none.
 struct proc* myproc(void) {
   push_off();
   struct cpu *c = mycpu();
@@ -116,10 +104,6 @@ int allocpid() {
   return pid;
 }
 
-// Look in the process table for an UNUSED proc.
-// If found, initialize state required to run in the kernel,
-// and return with p->lock held.
-// If there are no free procs, or a memory allocation fails, return 0.
 static struct proc* allocproc(void) {
   struct proc *p;
 
@@ -140,14 +124,12 @@ found:
   p->runtime = 0;
   p->vruntime = 0;
 
-  // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
     freeproc(p);
     release(&p->lock);
     return 0;
   }
 
-  // An empty user page table.
   p->pagetable = proc_pagetable(p);
   if(p->pagetable == 0){
     freeproc(p);
@@ -155,8 +137,6 @@ found:
     return 0;
   }
 
-  // Set up new context to start executing at forkret,
-  // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
@@ -164,9 +144,6 @@ found:
   return p;
 }
 
-// free a proc structure and the data hanging from it,
-// including user pages.
-// p->lock must be held.
 static void freeproc(struct proc *p) {
   if(p->trapframe)
     kfree((void*)p->trapframe);
@@ -183,34 +160,24 @@ static void freeproc(struct proc *p) {
   p->xstate = 0;
   p->state = UNUSED;
 
-  //For proj1c
-  p->nice = 0;        
-  p->runtime = 0;    
-  p->vruntime = 0;    
+  p->nice = 0;
+  p->runtime = 0;
+  p->vruntime = 0;
 }
 
-// Create a user page table for a given process, with no user memory,
-// but with trampoline and trapframe pages.
 pagetable_t proc_pagetable(struct proc *p) {
   pagetable_t pagetable;
 
-  // An empty page table.
   pagetable = uvmcreate();
   if(pagetable == 0)
     return 0;
 
-  // map the trampoline code (for system call return)
-  // at the highest user virtual address.
-  // only the supervisor uses it, on the way
-  // to/from user space, so not PTE_U.
   if(mappages(pagetable, TRAMPOLINE, PGSIZE,
               (uint64)trampoline, PTE_R | PTE_X) < 0){
     uvmfree(pagetable, 0);
     return 0;
   }
 
-  // map the trapframe page just below the trampoline page, for
-  // trampoline.S.
   if(mappages(pagetable, TRAPFRAME, PGSIZE,
               (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
     uvmunmap(pagetable, TRAMPOLINE, 1, 0);
@@ -221,17 +188,12 @@ pagetable_t proc_pagetable(struct proc *p) {
   return pagetable;
 }
 
-// Free a process's page table, and free the
-// physical memory it refers to.
 void proc_freepagetable(pagetable_t pagetable, uint64 sz) {
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
   uvmfree(pagetable, sz);
 }
 
-// a user program that calls exec("/init")
-// assembled from ../user/initcode.S
-// od -t xC ../user/initcode
 uchar initcode[] = {
   0x17, 0x05, 0x00, 0x00, 0x13, 0x05, 0x45, 0x02,
   0x97, 0x05, 0x00, 0x00, 0x93, 0x85, 0x35, 0x02,
@@ -242,21 +204,17 @@ uchar initcode[] = {
   0x00, 0x00, 0x00, 0x00
 };
 
-// Set up first user process.
 void userinit(void) {
   struct proc *p;
 
   p = allocproc();
   initproc = p;
   
-  // allocate one user page and copy initcode's instructions
-  // and data into it.
   uvmfirst(p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
 
-  // prepare for the very first "return" from kernel to user.
-  p->trapframe->epc = 0;      // user program counter
-  p->trapframe->sp = PGSIZE;  // user stack pointer
+  p->trapframe->epc = 0;
+  p->trapframe->sp = PGSIZE;
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
@@ -266,8 +224,6 @@ void userinit(void) {
   release(&p->lock);
 }
 
-// Grow or shrink user memory by n bytes.
-// Return 0 on success, -1 on failure.
 int growproc(int n) {
   uint64 sz;
   struct proc *p = myproc();
@@ -289,12 +245,10 @@ int fork(void) {
   struct proc *np;
   struct proc *p = myproc();
 
-  // Allocate process.
   if((np = allocproc()) == 0){
     return -1;
   }
 
-  // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
     release(&np->lock);
@@ -302,20 +256,16 @@ int fork(void) {
   }
   np->sz = p->sz;
 
-  // Copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
-  // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;
 
-  // Copy CFS-related fields
-  acquire(&p->lock);  // Protect parent's fields
+  acquire(&p->lock);
   np->nice = p->nice;
-  np->vruntime = p->vruntime;  // Start with parent's vruntime
-  np->runtime = 0;             // Child starts fresh
+  np->vruntime = p->vruntime;
+  np->runtime = 0;
   release(&p->lock);
 
-  // Increment reference counts on open file descriptors.
   for(i = 0; i < NOFILE; i++)
     if(p->ofile[i])
       np->ofile[i] = filedup(p->ofile[i]);
@@ -327,12 +277,10 @@ int fork(void) {
 
   release(&np->lock);
 
-  // Set parent while holding wait_lock
   acquire(&wait_lock);
   np->parent = p;
   release(&wait_lock);
 
-  // Mark runnable while holding np's lock
   acquire(&np->lock);
   np->state = RUNNABLE;
   release(&np->lock);
@@ -340,8 +288,6 @@ int fork(void) {
   return pid;
 }
 
-// Pass p's abandoned children to init.
-// Caller must hold wait_lock.
 void reparent(struct proc *p) {
   struct proc *pp;
 
@@ -353,16 +299,12 @@ void reparent(struct proc *p) {
   }
 }
 
-// Exit the current process.  Does not return.
-// An exited process remains in the zombie state
-// until its parent calls wait().
 void exit(int status) {
   struct proc *p = myproc();
 
   if(p == initproc)
     panic("init exiting");
 
-  // Close all open files.
   for(int fd = 0; fd < NOFILE; fd++){
     if(p->ofile[fd]){
       struct file *f = p->ofile[fd];
@@ -378,10 +320,8 @@ void exit(int status) {
 
   acquire(&wait_lock);
 
-  // Give any children to init.
   reparent(p);
 
-  // Parent might be sleeping in wait().
   wakeup(p->parent);
   
   acquire(&p->lock);
@@ -391,13 +331,10 @@ void exit(int status) {
 
   release(&wait_lock);
 
-  // Jump into the scheduler, never to return.
   sched();
   panic("zombie exit");
 }
 
-// Wait for a child process to exit and return its pid.
-// Return -1 if this process has no children.
 int wait(uint64 addr) {
   struct proc *pp;
   int havekids, pid;
@@ -406,16 +343,13 @@ int wait(uint64 addr) {
   acquire(&wait_lock);
 
   for(;;){
-    // Scan through table looking for exited children.
     havekids = 0;
     for(pp = proc; pp < &proc[NPROC]; pp++){
       if(pp->parent == p){
-        // make sure the child isn't still in exit() or swtch().
         acquire(&pp->lock);
 
         havekids = 1;
         if(pp->state == ZOMBIE){
-          // Found one.
           pid = pp->pid;
           if(addr != 0 && copyout(p->pagetable, addr, (char *)&pp->xstate,
                                   sizeof(pp->xstate)) < 0) {
@@ -432,14 +366,12 @@ int wait(uint64 addr) {
       }
     }
 
-    // No point waiting if we don't have any children.
     if(!havekids || killed(p)){
       release(&wait_lock);
       return -1;
     }
     
-    // Wait for a child to exit.
-    sleep(p, &wait_lock);  //DOC: wait-sleep
+    sleep(p, &wait_lock);
   }
 }
 
@@ -448,22 +380,22 @@ int cfs_sched_latency;
 int cfs_max_timeslice;
 int cfs_min_timeslice;
 
-// Nice to weight mapping (40 values from nice -20 to nice 19)
 int nice_to_weight[40] = {
-  88761, 71755, 56483, 46273, 36291, /* for nice = -20, …, -16 */
-  29154, 23254, 18705, 14949, 11916, /* for nice = -15, …, -11 */
-  9548, 7620, 6100, 4904, 3906,     /* for nice = -10, …, -6 */
-  3121, 2501, 1991, 1586, 1277,     /* for nice = -5, …, -1 */
-  1024, 820, 655, 526, 423,         /* for nice = 0, …, 4 */
-  335, 272, 215, 172, 137,          /* for nice = 5, …, 9 */
-  110, 87, 70, 56, 45,              /* for nice = 10, …, 14 */
-  36, 29, 23, 18, 15,               /* for nice = 15, …, 19 */
+  88761, 71755, 56483, 46273, 36291,
+  29154, 23254, 18705, 14949, 11916,
+  9548, 7620, 6100, 4904, 3906,
+  3121, 2501, 1991, 1586, 1277,
+  1024, 820, 655, 526, 423,
+  335, 272, 215, 172, 137,
+  110, 87, 70, 56, 45,
+  36, 29, 23, 18, 15,
 };
 
-struct proc *cfs_current_proc = 0;  
-int cfs_proc_timeslice_len = 0;     // Number of ticks assigned to the current process
-int cfs_proc_timeslice_left = 0;    // Number of ticks left for the current process
+struct proc *cfs_current_proc = 0;
+int cfs_proc_timeslice_len = 0;
+int cfs_proc_timeslice_left = 0;
 
+//Calculate total weight of all runnable processes
 int weight_sum() {
   int sum = 0;
   struct proc *p;
@@ -489,6 +421,7 @@ int weight_sum() {
   return sum;
 }
 
+//Find process with smallest vruntime
 struct proc* shortest_runtime_proc() {
   struct proc *p;
   struct proc *min_proc = 0;
@@ -499,21 +432,21 @@ struct proc* shortest_runtime_proc() {
     if(p->state == RUNNABLE && p->vruntime < min_vruntime) {
       if(min_proc) {
         if(!holding(&min_proc->lock)) panic("missing lock");
-        release(&min_proc->lock);  // Release previous min proc
+        release(&min_proc->lock);
       }
       min_proc = p;
       min_vruntime = p->vruntime;
     } else {
-      release(&p->lock);  // Release if not selected
+      release(&p->lock);
     }
   }
-  return min_proc;  // Note: min_proc's lock is still held!
+  return min_proc;
 }
 
+//Main CFS scheduling function
 void cfs_scheduler(struct cpu *c) {
   c->proc = 0;
   
-  // Handle current process
   if (cfs_current_proc) {
     cfs_proc_timeslice_left--;
     
@@ -524,7 +457,6 @@ void cfs_scheduler(struct cpu *c) {
       }
       release(&cfs_current_proc->lock);
     } else {
-      // Update vruntime when timeslice expires
       acquire(&cfs_current_proc->lock);
       if (cfs_current_proc->state == RUNNABLE) {
         int weight = nice_to_weight[cfs_current_proc->nice + 20];
@@ -534,21 +466,18 @@ void cfs_scheduler(struct cpu *c) {
         cfs_current_proc->vruntime += inc;
         cfs_current_proc->runtime += (cfs_proc_timeslice_len - cfs_proc_timeslice_left);  
         
-        // Debug: Process used its timeslice and is swapping out
         printf("[DEBUG CFS] Process %d used %d ticks of its assigned timeslice (totally %d ticks) and swapped out!\n", 
                cfs_current_proc->pid, cfs_proc_timeslice_len - cfs_proc_timeslice_left, cfs_current_proc->runtime);
       }
       release(&cfs_current_proc->lock);
     }
   }
-  // Find new process if needed
   if (c->proc == 0) {
     struct proc *p = shortest_runtime_proc();
     if (p) {
-      // Calculate timeslice
       int weight = nice_to_weight[p->nice + 20];
       int sum = weight_sum();
-      if (sum == 0) sum = 1;  // Prevent division by zero
+      if (sum == 0) sum = 1;
       
       cfs_proc_timeslice_len = (cfs_sched_latency * weight) / sum;
       if (cfs_proc_timeslice_len < cfs_min_timeslice) 
@@ -560,15 +489,12 @@ void cfs_scheduler(struct cpu *c) {
       cfs_current_proc = p;
       c->proc = p;
       
-      // Debug: New process scheduled
       printf("[DEBUG CFS] Process %d scheduled to run for a timeslice of %d ticks next!\n", 
              p->pid, cfs_proc_timeslice_len);
       
-      // Switch to new process
       p->state = RUNNING;
       swtch(&c->context, &p->context);   
       
-      // Process returned from scheduler, release its lock
       release(&p->lock);
     }
   }
@@ -581,10 +507,9 @@ void scheduler(void) {
   for(;;) {
     intr_on();
     
-    if (cfs) {  // Changed from cfs_enabled to cfs
+    if (cfs) {
       cfs_scheduler(c);
     } else {
-      // Original RR scheduler
       struct proc *p;
       for(p = proc; p < &proc[NPROC]; p++) {
         acquire(&p->lock);
@@ -600,13 +525,6 @@ void scheduler(void) {
   }
 }
 
-// Switch to scheduler.  Must hold only p->lock
-// and have changed proc->state. Saves and restores
-// intena because intena is a property of this
-// kernel thread, not this CPU. It should
-// be proc->intena and proc->noff, but that would
-// break in the few places where a lock is held but
-// there's no process.
 void sched(void) {
   int intena;
   struct proc *p = myproc();
@@ -625,7 +543,6 @@ void sched(void) {
   mycpu()->intena = intena;
 }
 
-// Give up the CPU for one scheduling round.
 void yield(void) {
   struct proc *p = myproc();
   acquire(&p->lock);
@@ -634,18 +551,12 @@ void yield(void) {
   release(&p->lock);
 }
 
-// A fork child's very first scheduling by scheduler()
-// will swtch to forkret.
 void forkret(void) {
   static int first = 1;
 
-  // Still holding p->lock from scheduler.
   release(&myproc()->lock);
 
   if (first) {
-    // File system initialization must be run in the context of a
-    // regular process (e.g., because it calls sleep), and thus cannot
-    // be run from main().
     first = 0;
     fsinit(ROOTDEV);
   }
@@ -653,37 +564,23 @@ void forkret(void) {
   usertrapret();
 }
 
-// Atomically release lock and sleep on chan.
-// Reacquires lock when awakened.
 void sleep(void *chan, struct spinlock *lk) {
   struct proc *p = myproc();
   
-  // Must acquire p->lock in order to
-  // change p->state and then call sched.
-  // Once we hold p->lock, we can be
-  // guaranteed that we won't miss any wakeup
-  // (wakeup locks p->lock),
-  // so it's okay to release lk.
-
-  acquire(&p->lock);  //DOC: sleeplock1
+  acquire(&p->lock);
   release(lk);
 
-  // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
 
   sched();
 
-  // Tidy up.
   p->chan = 0;
 
-  // Reacquire original lock.
   release(&p->lock);
   acquire(lk);
 }
 
-// Wake up all processes sleeping on chan.
-// Must be called without any p->lock.
 void wakeup(void *chan) {
   struct proc *p;
 
@@ -698,9 +595,6 @@ void wakeup(void *chan) {
   }
 }
 
-// Kill the process with the given pid.
-// The victim won't exit until it tries to return
-// to user space (see usertrap() in trap.c).
 int kill(int pid) {
   struct proc *p;
 
@@ -709,7 +603,6 @@ int kill(int pid) {
     if(p->pid == pid){
       p->killed = 1;
       if(p->state == SLEEPING){
-        // Wake process from sleep().
         p->state = RUNNABLE;
       }
       release(&p->lock);
@@ -735,9 +628,6 @@ int killed(struct proc *p) {
   return k;
 }
 
-// Copy to either a user address, or kernel address,
-// depending on usr_dst.
-// Returns 0 on success, -1 on error.
 int either_copyout(int user_dst, uint64 dst, void *src, uint64 len) {
   struct proc *p = myproc();
   if(user_dst){
@@ -748,9 +638,6 @@ int either_copyout(int user_dst, uint64 dst, void *src, uint64 len) {
   }
 }
 
-// Copy from either a user address, or kernel address,
-// depending on usr_src.
-// Returns 0 on success, -1 on error.
 int either_copyin(void *dst, int user_src, uint64 src, uint64 len) {
   struct proc *p = myproc();
   if(user_src){
@@ -761,9 +648,6 @@ int either_copyin(void *dst, int user_src, uint64 src, uint64 len) {
   }
 }
 
-// Print a process listing to console.  For debugging.
-// Runs when user types ^P on console.
-// No lock to avoid wedging a stuck machine further.
 void procdump(void) {
   static char *states[] = {
   [UNUSED]    "unused",
@@ -789,11 +673,12 @@ void procdump(void) {
   }
 }
 
+//Set process nice value (affects CFS scheduling)
 int nice(int value) {
   struct proc *p = myproc();
 
   if (value < -20 || value > 19) {
-      return p->nice;  // Return current nice value instead of -1
+      return p->nice;
   }
 
   acquire(&p->lock);
@@ -803,6 +688,7 @@ int nice(int value) {
   return p->nice;
 }
 
+//Initialize CFS scheduler with parameters
 int startcfs(int quantum, int weight, int decay) {
   cfs = 1;
   cfs_sched_latency = quantum;
@@ -811,27 +697,26 @@ int startcfs(int quantum, int weight, int decay) {
   return 0;
 }
 
+//Stop CFS scheduler
 int stopcfs(void) {
   cfs = 0;
   return 0;
 }
 
 int getruntime(int *pid, int *vruntime) {
-  struct proc *p = myproc();  
+  struct proc *p = myproc(); 
   if (!p) return -1;
   int actual, virtual;
-
+ 
   get_proc_runtime(p, &actual, &virtual);
+ 
+  printf("[SUMMARY] process (pid=%d): finishes comutation. During CFS: actual runtime = %d; virtual runtime = %d\n", p->pid, actual, virtual); 
+ 
+  return 0;
+ }
+ 
 
-  // *runtime = actual;
-  // *vruntime = virtual;
-
-  printf("[SUMMARY] process (pid=%d): finishes comutation. During CFS: actual runtime = %d; virtual runtime = %d\n", *pid, actual, virtual);
-
-  return 0; 
-}
-
-
+//Helper to get process runtime stats
 void get_proc_runtime(struct proc *p, int *actual, int *virtual) {
   acquire(&p->lock);
   *actual = p->runtime;

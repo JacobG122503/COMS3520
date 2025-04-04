@@ -69,7 +69,8 @@ main(int argc, char* argv[])
 	//every one summarizies its actual and virtual runtime during CFS; note: pipe is used for mutual exclusion
 	read(fd[0],msg,128);
 	int runtime[2];
-        if(getruntime(getpid(), &runtime[1])==0)
+        runtime[0] = getpid();
+        if(getruntime(&runtime[0], &runtime[1])==0)
             //printf("[SUMMARY] process (pid=%d): finishes comutation. During CFS: actual runtime = %d; virtual runtime = %d\n", mypid, runtime[0], runtime[1]);
             printf("");
         else

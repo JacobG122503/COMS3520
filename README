@@ -1,49 +1,78 @@
-xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
-Version 6 (v6).  xv6 loosely follows the structure and style of v6,
-but is implemented for a modern RISC-V multiprocessor using ANSI C.
+ASSIGNMENT 1C
 
-ACKNOWLEDGMENTS
+Jacob Garcia - jacobgar@iastate.edu
 
-xv6 is inspired by John Lions's Commentary on UNIX 6th Edition (Peer
-to Peer Communications; ISBN: 1-57398-013-7; 1st edition (June 14,
-2000)).  See also https://pdos.csail.mit.edu/6.1810/, which provides
-pointers to on-line resources for v6.
+Below is a list of all files modified and the output of the program. 
+The program works almost all the time but sometime because of my computer I think, I have to re run it but it will
+always work the second time at least. All values seem accurate. 
 
-The following people have made contributions: Russ Cox (context switching,
-locking), Cliff Frey (MP), Xiao Yu (MP), Nickolai Zeldovich, and Austin
-Clements.
+proc.c/proc.h:
+Added CFS scheduler implementation with vruntime tracking, nice values, and process weight calculations. Modified process struct to support CFS.
 
-We are also grateful for the bug reports and patches contributed by
-Takahiro Aoyagi, Silas Boyd-Wickizer, Anton Burtsev, carlclone, Ian
-Chen, Dan Cross, Cody Cutler, Mike CAT, Tej Chajed, Asami Doi,
-eyalz800, Nelson Elhage, Saar Ettinger, Alice Ferrazzi, Nathaniel
-Filardo, flespark, Peter Froehlich, Yakir Goaron, Shivam Handa, Matt
-Harvey, Bryan Henry, jaichenhengjie, Jim Huang, Matúš Jókay, John
-Jolly, Alexander Kapshuk, Anders Kaseorg, kehao95, Wolfgang Keller,
-Jungwoo Kim, Jonathan Kimmitt, Eddie Kohler, Vadim Kolontsov, Austin
-Liew, l0stman, Pavan Maddamsetti, Imbar Marinescu, Yandong Mao, Matan
-Shabtay, Hitoshi Mitake, Carmi Merimovich, Mark Morrissey, mtasm, Joel
-Nider, Hayato Ohhashi, OptimisticSide, Harry Porter, Greg Price, Jude
-Rich, segfault, Ayan Shafqat, Eldar Sehayek, Yongming Shen, Fumiya
-Shigemitsu, Cam Tenny, tyfkda, Warren Toomey, Stephen Tu, Rafael Ubal,
-Amane Uehara, Pablo Ventura, Xi Wang, WaheedHafez, Keiichi Watanabe,
-Nicolas Wolovick, wxdao, Grant Wu, Jindong Zhang, Icenowy Zheng,
-ZhUyU1997, and Zou Chang Wei.
+syscall.c/syscall.h:
+Added new system calls for CFS (nice(), startcfs(), stopcfs(), getruntime()) and updated syscall table.
 
+sysproc.c:
+Minor adjustment for new scheduler system calls.
 
-The code in the files that constitute xv6 is
-Copyright 2006-2022 Frans Kaashoek, Robert Morris, and Russ Cox.
+user/testsyscall-2.c:
+Added test program to verify CFS scheduler behavior.
 
-ERROR REPORTS
+user.h/usys.pl:
+Added calls to user
 
-Please send errors and suggestions to Frans Kaashoek and Robert Morris
-(kaashoek,rtm@mit.edu).  The main purpose of xv6 is as a teaching
-operating system for MIT's 6.1810, so we are more interested in
-simplifications and clarifications than new features.
+Key changes: Implemented Completely Fair Scheduler (CFS) with vruntime-based process selection and configurable scheduling parameters.
 
-BUILDING AND RUNNING XV6
+$ testsyscall-2
 
-You will need a RISC-V "newlib" tool chain from
-https://github.com/riscv/riscv-gnu-toolchain, and qemu compiled for
-riscv64-softmmu.  Once they are installed, and in your shell
-search path, you can run "make qemu".
+[START] Process (pid:16) has started cfs!
+
+[PRIORITY] process (pid=16): has nice = 3
+[PRIORITY] process (pid=17): has nice = 10
+[PRIORITY] process (pid=18): has nice = 10
+[PRIORITY] process (pid=19): has nice = 10
+[PRIORITY] process (pid=20): has nice = 10
+[PRIORITY] process (pid=21): has nice = 10
+[PRIORITY] process (pid=22): has nice = 5
+[PRIORITY] process (pid=23): has nice = 5
+[PRIORITY] process (pid=24): has nice = 5
+[PRIORITY] process (pid=25): has nice = 5
+[PRIORITY] process (pid=26): has nice = 5
+[DEBUG CFS] Process 16 used 20 ticks of its assigned timeslice (totally 20 ticks) and swapped out!
+[DEBUG CFS] Process 17 scheduled to run for a timeslice of 4 ticks next!
+[DEBUG CFS] Process 18 scheduled to run for a timeslice of 4 ticks next!
+[DEBUG CFS] Process 19 scheduled to run for a timeslice of 4 ticks next!
+[DEBUG CFS] Process 19 used 4 ticks of its assigned timeslice (totally 4 ticks) and swapped out!
+[DEBUG CFS] Process 20 scheduled to run for a timeslice of 4 ticks next!
+[DEBUG CFS] Process 21 scheduled to run for a timeslice of 4 ticks next!
+[DEBUG CFS] Process 22 scheduled to run for a timeslice of 16 ticks next!
+[DEBUG CFS] Process 22 used 16 ticks of its assigned timeslice (totally 16 ticks) and swapped out!
+[DEBUG CFS] Process 23 scheduled to run for a timeslice of 16 ticks next!
+[DEBUG CFS] Process 24 scheduled to run for a timeslice of 20 ticks next!
+[DEBUG CFS] Process 25 scheduled to run for a timeslice of 20 ticks next!
+[DEBUG CFS] Process 25 used 20 ticks of its assigned timeslice (totally 20 ticks) and swapped out!
+[DEBUG CFS] Process 26 scheduled to run for a timeslice of 20 ticks next!
+[DEBUG CFS] Process 19 scheduled to run for a timeslice of 9 ticks next!
+[DEBUG CFS] Process 16 scheduled to run for a timeslice of 20 ticks next!
+[DEBUG CFS] Process 16 used 20 ticks of its assigned timeslice (totally 40 ticks) and swapped out!
+[DEBUG CFS] Process 22 scheduled to run for a timeslice of 20 ticks next!
+[DEBUG CFS] Process 25 scheduled to run for a timeslice of 20 ticks next!
+[DEBUG CFS] Process 16 scheduled to run for a timeslice of 20 ticks next!
+[DEBUG CFS] Process 16 used 20 ticks of its assigned timeslice (totally 60 ticks) and swapped out!
+[DEBUG CFS] Process 16 scheduled to run for a timeslice of 20 ticks next!
+
+[STOP] Process (pid=16): has stopped cfs
+
+[SUMMARY] process (pid=17): finishes comutation. During CFS: actual runtime = 0; virtual runtime = 0
+[SUMMARY] process (pid=18): finishes comutation. During CFS: actual runtime = 0; virtual runtime = 0
+[SUMMARY] process (pid=19): finishes comutation. During CFS: actual runtime = 4; virtual runtime = 37
+[SUMMARY] process (pid=20): finishes comutation. During CFS: actual runtime = 0; virtual runtime = 0
+[SUMMARY] process (pid=21): finishes comutation. During CFS: actual runtime = 0; virtual runtime = 0
+[SUMMARY] process (pid=22): finishes comutation. During CFS: actual runtime = 16; virtual runtime = 48
+[SUMMARY] process (pid=23): finishes comutation. During CFS: actual runtime = 0; virtual runtime = 0
+[SUMMARY] process (pid=24): finishes comutation. During CFS: actual runtime = 0; virtual runtime = 0
+[SUMMARY] process (pid=25): finishes comutation. During CFS: actual runtime = 20; virtual runtime = 61
+[SUMMARY] process (pid=26): finishes comutation. During CFS: actual runtime = 0; virtual runtime = 0
+[SUMMARY] process (pid=16): finishes comutation. During CFS: actual runtime = 60; virtual runtime = 114
+$ QEMU: Terminated
+

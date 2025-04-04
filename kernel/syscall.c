@@ -101,33 +101,31 @@ extern int startcfs(int , int , int );
 extern int stopcfs(void);
 extern int getruntime(int*, int*);
 
-// Create the wrapper function for sys_getruntime
+
 uint64 sys_getruntime(void) {
   int start, end;
-  return (uint64)getruntime(&start, &end);  // Cast return value
+  return (uint64)getruntime(&start, &end); 
 }
 
-// Create a wrapper for sys_nice
+
 uint64 sys_nice(void) {
     int nice_val;
-    argint(0, &nice_val);  // Fetch the argument passed to nice()
-    return nice(nice_val);  // Call the original nice function
+    argint(0, &nice_val); 
+    return nice(nice_val);  
 }
 
-// Create a wrapper for sys_startcfs
 uint64 sys_startcfs(void) {
     int arg1, arg2, arg3;
-    argint(0, &arg1);  // Fetch arguments
+    argint(0, &arg1);  
     argint(1, &arg2);
     argint(2, &arg3);
-    return startcfs(arg1, arg2, arg3);  // Call the original startcfs function
+    return startcfs(arg1, arg2, arg3);  
 }
 
 uint64 sys_stopcfs(void) {
-  return (uint64)stopcfs();  // Ensure correct return type
+  return (uint64)stopcfs();  
 }
 
-// Update the syscall table with wrappers
 static uint64 (*syscalls[])(void) = {
     [SYS_fork]    sys_fork,
     [SYS_exit]    sys_exit,
