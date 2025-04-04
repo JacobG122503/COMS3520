@@ -6,6 +6,9 @@ Below is a list of all files modified and the output of the program.
 The program works almost all the time but sometime because of my computer I think, I have to re run it but it will
 always work the second time at least. All values seem accurate. 
 
+I did however have to change the test file the smallest amount, for some reason the values would not actually 
+be passed back for the summary but the change makes it work.
+
 proc.c/proc.h:
 Added CFS scheduler implementation with vruntime tracking, nice values, and process weight calculations. Modified process struct to support CFS.
 
